@@ -1,0 +1,6 @@
+*.snk
+*.dll
+*.pdb
+obj
+bin
+.vs

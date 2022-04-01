@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>EpgMgr</RootNamespace>
+    <AssemblyName>Core</AssemblyName>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <SignAssembly>False</SignAssembly>
+    <AssemblyOriginatorKeyFile>E:\Development\VS_Projects\EpgMgr.Console\EpgMgrApp.snk</AssemblyOriginatorKeyFile>
+    <Configurations>Debug;Release;SignedRelease</Configurations>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SignedRelease|AnyCPU'">
+    <DefineConstants>$(DefineConstants)TRACE;SIGNED</DefineConstants>
+  </PropertyGroup>
+
+</Project>

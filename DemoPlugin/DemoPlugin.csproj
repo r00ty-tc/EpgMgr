@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>E:\Development\VS_Projects\EpgMgr.Console\EpgMgrPlugin.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>False</DelaySign>
+    <Configurations>Debug;Release;SignedRelease</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EpgMgr.Core\EpgMgr.Core.csproj">
+      <CopyLocal>False</CopyLocal>
+      <CopyLocalSatelliteAssemblies>False</CopyLocalSatelliteAssemblies>
+      <ReferenceOutputAssembly>True</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="mkdir $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins&#xD;&#xA;copy $(TargetPath) $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins\$(TargetFileName)" />
+  </Target>
+
+</Project>
