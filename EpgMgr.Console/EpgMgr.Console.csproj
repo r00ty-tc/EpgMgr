@@ -8,7 +8,7 @@
     <RootNamespace>EpgMgr</RootNamespace>
     <AssemblyName>Console</AssemblyName>
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>E:\Development\VS_Projects\EpgMgr.Console\EpgMgrApp.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>../EpgMgrApp.snk</AssemblyOriginatorKeyFile>
     <Configurations>Debug;Release;SignedRelease</Configurations>
   </PropertyGroup>
 

@@ -7,8 +7,8 @@
     <RootNamespace>EpgMgr</RootNamespace>
     <AssemblyName>Core</AssemblyName>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <SignAssembly>False</SignAssembly>
-    <AssemblyOriginatorKeyFile>E:\Development\VS_Projects\EpgMgr.Console\EpgMgrApp.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>../EpgMgrApp.snk</AssemblyOriginatorKeyFile>
     <Configurations>Debug;Release;SignedRelease</Configurations>
   </PropertyGroup>
 

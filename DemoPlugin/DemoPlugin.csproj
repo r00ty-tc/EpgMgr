@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>E:\Development\VS_Projects\EpgMgr.Console\EpgMgrPlugin.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>../EpgMgrPlugin.snk</AssemblyOriginatorKeyFile>
     <DelaySign>False</DelaySign>
     <Configurations>Debug;Release;SignedRelease</Configurations>
   </PropertyGroup>
