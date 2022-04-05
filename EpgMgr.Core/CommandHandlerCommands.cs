@@ -52,7 +52,8 @@ namespace EpgMgr
         }
         internal static string CommandHandlerRELOAD(Core core, ref FolderEntry context, string command, string[] args)
         {
-            return "";
+            core.LoadConfig();
+            return "Configuration reloaded";
         }
         internal static string CommandHandlerRUN(Core core, ref FolderEntry context, string command, string[] args)
         {

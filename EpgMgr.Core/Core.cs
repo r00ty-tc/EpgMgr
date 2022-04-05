@@ -12,6 +12,7 @@ namespace EpgMgr
         private Config m_config;
         private List<Type> m_configTypes;
         public CommandManager CommandMgr;
+
         public Core()
         {
             m_config = new Config();
@@ -34,10 +35,9 @@ namespace EpgMgr
             var declaration = configXml.CreateXmlDeclaration("1.0", "UTF-8", null);
             var rootNode = configXml.DocumentElement;
             configXml.InsertBefore(declaration, rootNode);
-            using (XmlWriter xmlWriter = configXml.CreateNavigator().AppendChild())
+            using (var xmlWriter = configXml.CreateNavigator().AppendChild())
             {
                 var serializer = new XmlSerializer(typeof(Config), m_configTypes.ToArray());
-
                 serializer.Serialize(xmlWriter, m_config);
             }
 
@@ -48,6 +48,10 @@ namespace EpgMgr
             {
                 var configNode = plugin.PluginObj.SaveConfig();
                 var node = (XmlElement) configXml.ImportNode(configNode, true);
+
+                // This removes the xmlns attributes that appear on every plugin config, without breaking dynamic type conversion
+                node.Attributes.RemoveNamedItem("xmlns:xsi");
+                node.Attributes.RemoveNamedItem("xmlns:xsd");
                 pluginConfigsElement.AppendChild(node);
             }
             configXml.DocumentElement?.AppendChild(pluginConfigsElement);
@@ -70,43 +74,39 @@ namespace EpgMgr
             if (configTemp != null)
                 m_config = configTemp;
 
-            if (!coreOnly)
+            if (coreOnly) return;
+            var plugins = PluginMgr.PluginNames;
+            if (m_config.EnabledPlugins == null || !plugins.Any())
             {
-                var plugins = PluginMgr.PluginNames;
-                if (m_config.EnabledPlugins == null || !plugins.Any())
-                {
-                    var allPlugins = GetAllPlugins();
-                    m_config.EnabledPlugins = allPlugins.ToList();
-                }
-                PluginMgr.LoadPlugins(m_config.EnabledPlugins);
+                var allPlugins = GetAllPlugins();
+                m_config.EnabledPlugins = allPlugins.ToList();
+            }
+            PluginMgr.LoadPlugins(m_config.EnabledPlugins);
 
-                // Now load plugin configs
-                var pluginConfigs = configXml.DocumentElement.GetElementsByTagName("PluginConfigs").Item(0);
-                foreach (XmlElement pluginElement in pluginConfigs)
-                {
-                    var pluginId = pluginElement.GetAttribute("Id");
-                    var plugin = PluginMgr.Plugins.FirstOrDefault(row => row.PluginObj.Id.ToString().Equals(pluginId));
-                    if (plugin != null)
-                        plugin.PluginObj.LoadConfig(pluginElement);
-                }
+            // Now load plugin configs
+            var pluginConfigs = configXml.DocumentElement.GetElementsByTagName("PluginConfigs").Item(0);
+
+            if (pluginConfigs == null)
+                throw new Exception($"Configuration file {CONFIG_FILE} doesn't contain a plugin configuration section");
+
+            foreach (XmlElement pluginElement in pluginConfigs)
+            {
+                var pluginId = pluginElement.GetAttribute("Id");
+                var plugin = PluginMgr.Plugins.FirstOrDefault(row => row.PluginObj.Id.ToString().Equals(pluginId));
+                plugin?.PluginObj.LoadConfig(pluginElement);
             }
         }
 
         public IEnumerable<PluginConfigEntry> GetAllPlugins()
         {
             var fileList = Directory.GetFiles("Plugins", "*.dll");
-            List<PluginConfigEntry> pluginList = new List<PluginConfigEntry>();
 
-            foreach (var file in fileList)
-            {
-                var plugin = PluginMgr.getPlugin(file);
-                if (plugin != null)
-                {
-                    pluginList.Add(new PluginConfigEntry(plugin.Id.ToString(), plugin.Name, new FileInfo(file).Name));
-                }
-            }
-
-            return pluginList;
+            return (
+                from file in fileList 
+                let plugin = PluginMgr.getPlugin(file) 
+                where plugin != null 
+                select new PluginConfigEntry(plugin.Id.ToString(), plugin.Name, new FileInfo(file).Name)
+            ).ToList();
         }
 
         public IEnumerable<Plugin> GetActivePlugins() => PluginMgr.Plugins.Select(row => row.PluginObj);

@@ -4,3 +4,9 @@
 obj
 bin
 .vs
+/buildall.bat
+/buildlinux64.bat
+/buildlinux64.sh
+/buildlinuxarm.bat
+/buildlinuxarm64.bat
+/buildwin64.bat

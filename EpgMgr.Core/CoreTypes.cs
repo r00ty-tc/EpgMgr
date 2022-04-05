@@ -27,7 +27,7 @@ namespace EpgMgr
         }
     }
 
-    [Serializable]
+    [XmlType]
     public class Config
     {
         public List<PluginConfigEntry> EnabledPlugins { get; set; }

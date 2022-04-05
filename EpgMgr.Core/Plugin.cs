@@ -39,10 +39,13 @@ namespace EpgMgr.Plugins
         {
             // Default will be to just flat deserialize to XML
             // Anything more complex should just override this method
-            var serializer = new XmlSerializer(typeof(ConfigEntry), configTypes.ToArray());
-            var configTemp = (ConfigEntry?)serializer.Deserialize(new XmlNodeReader(pluginConfig));
-            if (configTemp != null)
-                configRoot = configTemp;
+            using (XmlReader xmlReader = pluginConfig.CreateNavigator().ReadSubtree())
+            {
+                var serializer = new XmlSerializer(typeof(ConfigEntry), configTypes.ToArray());
+                var configTemp = (ConfigEntry)serializer.Deserialize(xmlReader);
+                if (configTemp != null)
+                    configRoot = configTemp;
+            }
         }
 
         public virtual XmlElement? SaveConfig()

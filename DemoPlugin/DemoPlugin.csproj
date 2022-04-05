@@ -16,6 +16,11 @@
       <CopyLocalSatelliteAssemblies>False</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>True</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\EpgMgr.XmlTV\EpgMgr.XmlTV.csproj">
+      <Private>False</Private>
+      <CopyLocalSatelliteAssemblies>False</CopyLocalSatelliteAssemblies>
+      <CopyLocal>False</CopyLocal>
+    </ProjectReference>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

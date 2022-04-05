@@ -39,12 +39,14 @@ if (!coreSigned || !coreKey.Equals(publicKey))
     throw new Exception("Failed to validate Console.exe component");
 #endif
 
-//var consoleKey = Assembly.GetAssembly
+var lastStatus = string.Empty;
+var progressMode = false;
 var core = new Core();
 
 var context = core.CommandMgr.RootFolder;
-Console.WriteLine("EpgMgr Console 0.1.0");
+Console.WriteLine($"EpgMgr Console {Assembly.GetExecutingAssembly().GetName().Version}");
 Console.Write($"{context.FolderPath} :: ");
+core.FeedbackMgr.FeedbackChanged += UpdateFeedback;
 while (true)
 {
     ProcessCommand();
@@ -61,4 +63,26 @@ void ProcessCommand()
     }
 
     Console.Write(result);
+}
+
+void UpdateFeedback(object? sender, FeedbackEventArgs eventArgs)
+{
+    if (eventArgs.Info.CurrentItem.Equals(0) && eventArgs.Info.MaxItems.Equals(0))
+    {
+        // Handle straightforward message update
+        if (progressMode)
+            progressMode = false;
+        Console.WriteLine(eventArgs.Info.Status);
+    }
+    else
+    {
+        // Otherwise handle progress bar
+        progressMode = true;
+        int progress = (int)Math.Round(eventArgs.Info.Percent / 4, 0, MidpointRounding.AwayFromZero);
+        var statusString = $"{eventArgs.Info.Status,-35}[{new string('▓', progress)}{new string('░', 25 - progress)}] {eventArgs.Info.CurrentItem}/{eventArgs.Info.MaxItems} ({Math.Round(eventArgs.Info.Percent, 2):0.00}%)";
+        if (!lastStatus.Equals(eventArgs.Info.Status))
+            Console.Write(Environment.NewLine);
+        Console.Write(statusString + new string('\b', statusString.Length));
+        lastStatus = eventArgs.Info.Status;
+    }
 }

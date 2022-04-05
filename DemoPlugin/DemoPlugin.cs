@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.Reflection;
+using System.Xml;
 using System.Xml.Serialization;
 using EpgMgr;
 
@@ -7,7 +8,7 @@ namespace EpgMgr.Plugins
     public partial class DemoPlugin : Plugin
     {
         public override Guid Id => Guid.Parse("b2e441ae-ac93-467e-b6a9-19782bf7c011");
-        public override string Version => "1.0";
+        public override string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString();
         public override string Name => "Demo Plugin";
         public override string ConsoleName => "Demo";
 
@@ -33,9 +34,7 @@ namespace EpgMgr.Plugins
             // Custom paths
             folderEntry.AddChild("TestFolder");
 
-            // Custom global commands
-            core.CommandMgr.RegisterCommand("hello", CommandHandlerHELLO, this);
-            core.CommandMgr.RegisterCommand("listchannels", CommandHandlerLISTCHANNELS, this, folderEntry);
+            RegisterCommands(folderEntry);
         }
 
         public DemoPlugin(Core core) : base(core)

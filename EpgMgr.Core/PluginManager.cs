@@ -24,6 +24,7 @@ namespace EpgMgr
             PluginObj = plugin;
         }
     }
+
     public class PluginManager
     {
 
@@ -35,9 +36,9 @@ namespace EpgMgr
             @"ACQAAASAAACUAAAABgIAAAAkAABSU0ExAAQAAAEAAQARxlX6t+1egIc1MJrKwtps2mo1/bTVtCIDsNRDPIUfCmqT8H8PPThLun8mt0PCETALXhM+R+g0du22vb1Usqd1HOhP8wUYxJJyF21hQoKXAh3Wl8Y/EHLyrRCJeS2QLbIredprzcOnrT0/tNX+0tWwaVwHdeQpiE17fSzzlNBfsg==";
 #endif
 
-        private List<PluginEntry> m_plugins;
-        private Core m_core;
-        private string folderSeparator;
+        private readonly List<PluginEntry> m_plugins;
+        private readonly Core m_core;
+        private readonly string folderSeparator;
         public string[] PluginConsoleNames { get; private set; }
 
         public PluginManager(Core core)
@@ -54,12 +55,15 @@ namespace EpgMgr
         {
             // Clear all current plugins (GC needs to deal with this)
             m_plugins.Clear();
-            foreach (PluginConfigEntry entry in enabledPlugins)
+            m_core.FeedbackMgr.UpdateStatus("Loading plugins");
+            foreach (var entry in enabledPlugins)
             {
                 var plugin = getPlugin($"Plugins{folderSeparator}{entry.DllFile}");
-                if (plugin != null)
-                    m_plugins.Add(new PluginEntry(plugin.GetType(), plugin.Name, plugin));
+                if (plugin == null) continue;
+                m_plugins.Add(new PluginEntry(plugin.GetType(), plugin.Name, plugin));
+                m_core.FeedbackMgr.UpdateStatus($"Loaded plugin {plugin.Name} V{plugin.Version}");
             }
+            m_core.FeedbackMgr.UpdateStatus($"Done loading {m_plugins.Count} plugins");
 
             PluginConsoleNames = m_plugins.Select(row => row.PluginObj.ConsoleName).ToArray();
             if (m_core.CommandMgr != null)
@@ -84,21 +88,12 @@ namespace EpgMgr
 #endif
 
             // Get exported types
-            foreach (var plugin in assembly.ExportedTypes)
-            {
-                // Check plugin has a name and basr type is a plugin
-                if (plugin.FullName == null || plugin.BaseType != typeof(Plugin)) continue;
-
-
-                // Create an instance of the class and add it to the collection
-                var thisPlugin = (Plugin?)assembly.CreateInstance(plugin.FullName, false, BindingFlags.Default, null, new object[] { m_core }, CultureInfo.CurrentCulture, null);
-                if (thisPlugin != null)
-                {
-                    return thisPlugin;
-                }
-            }
-
-            return null;
+            return (
+                from plugin in assembly.ExportedTypes 
+                where plugin.FullName != null && plugin.BaseType == typeof(Plugin) 
+                select (Plugin?)assembly.CreateInstance(plugin.FullName, false, BindingFlags.Default, null, 
+                    new object[] { m_core }, CultureInfo.CurrentCulture, null)
+                ).FirstOrDefault(thisPlugin => thisPlugin != null);
         }
 
         public string[] PluginNames => m_plugins.Select(row => row.PluginObj.Name).ToArray();

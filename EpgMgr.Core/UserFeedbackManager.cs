@@ -14,7 +14,7 @@ namespace EpgMgr
         public int CurrentItem { get; set; }
         public int MaxItems { get; set; }
 
-        public decimal Percent => ((decimal)CurrentItem / (decimal)MaxItems);
+        public decimal Percent => ((decimal)CurrentItem / (decimal)MaxItems) * 100;
 
         public FeedbackInfo()
         {
@@ -65,7 +65,7 @@ namespace EpgMgr
                 throw new Exception("Status update called with no values passed!");
 
             FeedbackInfo? newInfo = null;
-            feedbackLock.EnterReadLock();
+            feedbackLock.EnterUpgradeableReadLock();
             try
             {
                 // Check if any changes from current state
@@ -78,8 +78,12 @@ namespace EpgMgr
                     {
                         // Update changes
                         Info.Status = status ?? Info.Status;
-                        Info.CurrentItem = currentItem ?? Info.CurrentItem;
-                        Info.MaxItems = maxItems ?? Info.MaxItems;
+                        Info.CurrentItem = currentItem ?? 0;
+                        if (currentItem != null)
+                            Info.MaxItems = maxItems ?? Info.MaxItems;
+                        else
+                            Info.MaxItems = maxItems ?? 0;
+
                         newInfo = (FeedbackInfo)Info.Clone();
                     }
                     finally
@@ -90,7 +94,7 @@ namespace EpgMgr
             }
             finally
             {
-                feedbackLock.ExitReadLock();
+                feedbackLock.ExitUpgradeableReadLock();
             }
 
             // Update subscribers with a copy of status, if there was a change

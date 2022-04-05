@@ -93,7 +93,8 @@ namespace EpgMgr.Plugins
     /// Configuration Entry. A nested confuration entry. The root of which is the master configuration
     /// </summary>
     //[XmlType(TypeName = "PluginConfig")]
-    [Serializable]
+    //[Serializable]
+    [XmlRoot("PluginConfig")]
     public class ConfigEntry
     {
         [XmlAttribute(AttributeName = "Id")]
@@ -113,7 +114,6 @@ namespace EpgMgr.Plugins
         public string? Key { get; set; }
         [XmlIgnore]
         public ConfigValueType? ValueType { get; set; }
-        [XmlElement]
         public dynamic? Value { get; set; }
         [XmlAttribute]
         public string? Path { get; set; }
@@ -123,23 +123,6 @@ namespace EpgMgr.Plugins
         public ConfigEntry? RootEntry { get; }
         [XmlIgnore]
         public ConfigEntry? ParentEntry { get; }
-
-        /*[XmlElement(ElementName = "Value")]
-        public dynamic? ValueXml
-        {
-            set
-            {
-                var xmlElement = value;
-                if (xmlElement == null)
-                    Value = value;
-                else
-                {
-                    Value = xmlElement[1].Value;
-                }
-
-            }
-            get => Value;
-        }*/
 
         [XmlAttribute("ConfigEntryType")]
         public string? ConfigEntryTypeXml

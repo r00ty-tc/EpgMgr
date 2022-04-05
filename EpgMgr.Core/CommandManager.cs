@@ -114,7 +114,7 @@ namespace EpgMgr
                         break;
                     case ' ' when currentString.Any() && !quoted:
                         result.Add(currentString);
-                        currentString = String.Empty;
+                        currentString = string.Empty;
                         break;
                     default:
                     {
@@ -135,8 +135,7 @@ namespace EpgMgr
 
         public string HandleCommand(ref FolderEntry context, string command)
         {
-            if (context == null)
-                context = RootFolder;
+            context ??= RootFolder;
 
             var prompt = $"{context} :: ";
             if (string.IsNullOrWhiteSpace(command))
@@ -147,14 +146,11 @@ namespace EpgMgr
             var commandString = commandLineSplit.First();
             var args = commandLineSplit.TakeLast(commandLineSplit.Length - 1).ToArray();
             var validCommand = GetValidCommands(context).FirstOrDefault(row => row.CommandString.Equals(commandString, StringComparison.InvariantCultureIgnoreCase));
-            if (validCommand != null)
-            {
-                var result = validCommand.Method(m_core, ref context, commandString, args) + Environment.NewLine;
-                result += $"{context.FolderPath} :: ";
-                return result;
-            }
+            if (validCommand == null) return $"Invalid Command {commandString}" + Environment.NewLine + "{context} :: ";
+            var result = validCommand.Method(m_core, ref context, commandString, args) + Environment.NewLine;
+            result += $"{context.FolderPath} :: ";
+            return result;
 
-            return $"Invalid Command {commandString}" + Environment.NewLine + "{context} :: ";
         }
 
         protected CommandReference[] GetValidCommands(FolderEntry context)
