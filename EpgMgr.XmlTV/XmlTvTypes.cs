@@ -141,6 +141,7 @@ namespace EpgMgr.XmlTV
         [XmlElement(ElementName = "icon")]
         public Icon Icon { get; set; }
 
+        public ValueIcon() { }
         public ValueIcon(Icon icon, string value)
         {
             Icon = icon;

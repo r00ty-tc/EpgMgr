@@ -64,6 +64,12 @@ namespace EpgMgr.XmlTV
             programmeLookup = new Dictionary<Tuple<string, string>, Programme>(Programmes.Select(row =>
                 new KeyValuePair<Tuple<string, string>, Programme>(
                     new Tuple<string, string>(row.Channel, row.StartTimeXml), row)));
+
+            // Update links programme -> channel
+            Programmes.ForEach(row => row.ChannelRef = GetChannel(row.Channel));
+
+            // Update links channel -> programme
+            Programmes.ForEach(row => GetChannel(row.Channel).Programmes.Add(row));
         }
 
         public Channel GetNewChannel(string id, string? displayName = null, string? lang = null, string? iconSource = null, int? iconWidth = null, int? iconHeight = null, string? url = null, string? urlSystem = null)
@@ -92,6 +98,8 @@ namespace EpgMgr.XmlTV
                 category, titleLang, subtitleLang, descriptionLang, languageLang, categoryLang);
             Programmes.Add(programme);
             programmeLookup.Add(new Tuple<string, string>(channel,programme.StartTimeXml), programme);
+            programme.ChannelRef = GetChannel(channel);
+            programme.ChannelRef.Programmes.Add(programme);
             return programme;
         }
 

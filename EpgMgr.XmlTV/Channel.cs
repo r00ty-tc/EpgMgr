@@ -21,6 +21,9 @@ namespace EpgMgr
         [XmlElement(ElementName = "url")]
         public List<XmlTvUrl> Urls { get; set; }
 
+        [XmlIgnore]
+        public List<Programme> Programmes { get; set; }
+
         public Channel(string id, string? displayName = null, string? lang = null, string? iconSource = null, int? iconWidth = null, int? iconHeight = null, string? url = null, string? urlSystem = null)
         {
             Id = id;
@@ -33,9 +36,14 @@ namespace EpgMgr
             Urls = new List<XmlTvUrl>();
             if (url != null)
                 Urls.Add(new XmlTvUrl(url, urlSystem));
+
+            Programmes = new List<Programme>();
         }
 
-        public Channel() { }
+        public Channel()
+        {
+            Programmes = new List<Programme>();
+        }
 
         public void AddDisplayName(string displayName, string? lang) => DisplayNames.Add(new TextWithLang(displayName, lang));
 

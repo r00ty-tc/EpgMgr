@@ -13,6 +13,7 @@ namespace EpgMgr.Plugins
             // Custom global commands
             core.CommandMgr.RegisterCommand("progresstest", CommandHandlerPROGRESSTEST, this);
             core.CommandMgr.RegisterCommand("xmltvtest", CommandHandlerXMLTVTEST, this);
+            core.CommandMgr.RegisterCommand("xmltv", CommandHandlerXMLTV, this);
 
             // Custom local commands
             core.CommandMgr.RegisterCommand("listchannels", CommandHandlerLISTCHANNELS, this, folderEntry);
@@ -28,6 +29,30 @@ namespace EpgMgr.Plugins
             }
             core.FeedbackMgr.UpdateStatus("Progress complete");
             return "Hello World";
+        }
+
+        public static string CommandHandlerXMLTV(Core core, ref FolderEntry context, string command,
+            string[] args)
+        {
+            if (args.Length < 1)
+                return "Invalid arguments. Try xmltv load <file>";
+
+            if (args[0].Equals("load", StringComparison.InvariantCultureIgnoreCase))
+            {
+                if (args.Length != 2)
+                    return "xmltv load requires a filename as argument";
+
+                if (!File.Exists(args[1]))
+                    return $"{args[1]}: File not found";
+
+                var startTime = DateTime.UtcNow.Ticks;
+                var test = XmlTV.XmlTV.Load(args[1]);
+                var endTime = DateTime.UtcNow.Ticks;
+                var diff = new TimeSpan(endTime - startTime);
+                return $"Loaded {args[1]} in {diff.TotalMilliseconds}ms";
+            }
+
+            return "Invalid command";
         }
 
         public static string CommandHandlerXMLTVTEST(Core core, ref FolderEntry context, string command,
