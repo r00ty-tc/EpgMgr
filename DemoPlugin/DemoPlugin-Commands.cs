@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EpgMgr.XmlTV;
 
 namespace EpgMgr.Plugins
 {
@@ -12,7 +13,6 @@ namespace EpgMgr.Plugins
         {
             // Custom global commands
             core.CommandMgr.RegisterCommand("progresstest", CommandHandlerPROGRESSTEST, this);
-            core.CommandMgr.RegisterCommand("xmltvtest", CommandHandlerXMLTVTEST, this);
             core.CommandMgr.RegisterCommand("xmltv", CommandHandlerXMLTV, this);
 
             // Custom local commands
@@ -35,8 +35,9 @@ namespace EpgMgr.Plugins
             string[] args)
         {
             if (args.Length < 1)
-                return "Invalid arguments. Try xmltv load <file>";
+                return "Invalid arguments. Try xmltv load <file> or xmltv test";
 
+            // TEST: Load existing config 
             if (args[0].Equals("load", StringComparison.InvariantCultureIgnoreCase))
             {
                 if (args.Length != 2)
@@ -52,28 +53,33 @@ namespace EpgMgr.Plugins
                 return $"Loaded {args[1]} in {diff.TotalMilliseconds}ms";
             }
 
+            if (args[0].Equals("test", StringComparison.InvariantCultureIgnoreCase))
+            {
+                var fileName = args.Length == 2 ? args[1] : "xmltvtest.xml";
+                var xmltv = new XmlTV.XmlTV(DateTime.Now, "Demo test", null, "EpgMgr/Demo", null);
+                var channel = xmltv.GetNewChannel("BBC1", "BBC One", "en", "http://icon.com", null, null, "http://example.com");
+                channel.AddDisplayName("Test german name", "de");
+                channel.AddDisplayName("Test french name", "fr");
+                channel.AddIcon("http://logo.com/logo1.png", 100, 120);
+                channel.AddUrl("http://nowhere.com", "test");
+                var programme = xmltv.GetNewProgramme(DateTime.Now, channel.Id, "The test programme", DateTime.Now.AddHours(1),
+                    "The revenge", null, "English", "Drama", "en", "en", null, "en");
+                programme.AddIcon("http://icons.com", 150, 200);
+                programme.AddEpisodeNum("S01E02");
+                programme.AddSubtitleInfo("teletext");
+                programme.AddCredit(CreditType.CreditDirector, "Steven Spielberg", new Image("http://images.com/spielberg"), new XmlTvUrl("http://spielberg.com"));
+                programme.AddActor("Harold Lloyd", "Johnny boy", "yes");
+                programme.AddActor("John Smith", "Ratfield", null, null, new XmlTvUrl("http://imdb.com/johnsmith", "imdb"));
+                xmltv.Save(fileName);
+                var test = XmlTV.XmlTV.Load(fileName);
+                return File.Exists(fileName) ?
+                    $"Created file {fileName} with {new FileInfo(fileName).Length}" :
+                    $"Failed to write file {fileName}";
+            }
+
             return "Invalid command";
         }
 
-        public static string CommandHandlerXMLTVTEST(Core core, ref FolderEntry context, string command,
-            string[] args)
-        {
-            var fileName = args.FirstOrDefault() ?? "xmltvtest.xml";
-            var xmltv = new XmlTV.XmlTV(DateTime.Now, "Demo test", null, "EpgMgr/Demo", null);
-            var channel = xmltv.GetNewChannel("BBC1", "BBC One", "en", "http://icon.com", null, null, "http://example.com");
-            channel.AddDisplayName("Test german name", "de");
-            channel.AddDisplayName("Test french name", "fr");
-            channel.AddIcon("http://logo.com/logo1.png", 100, 120);
-            channel.AddUrl("http://nowhere.com", "test");
-            var programme = xmltv.GetNewProgramme(DateTime.Now, channel.Id, "The test programme", DateTime.Now.AddHours(1),
-                "The revenge", null, "English", "Drama", "en", "en", null, "en");
-            xmltv.Save(fileName);
-            var test = XmlTV.XmlTV.Load(fileName);
-            return File.Exists(fileName) ? 
-                $"Created file {fileName} with {new FileInfo(fileName).Length}" : 
-                $"Failed to write file {fileName}";
-
-        }
         public string CommandHandlerLISTCHANNELS(Core core, ref FolderEntry context, string command, string[] args)
         {
             if (args.Length > 1 || (args.Length == 1 && !args.FirstOrDefault().Equals("all")))

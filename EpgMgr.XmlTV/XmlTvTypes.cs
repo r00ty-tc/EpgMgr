@@ -29,7 +29,7 @@ namespace EpgMgr.XmlTV
         {
         }
 
-        public XmlTvUrl(string url, string? system)
+        public XmlTvUrl(string url, string? system = null)
         {
             Url = url;
             System = system;
@@ -101,9 +101,10 @@ namespace EpgMgr.XmlTV
     [XmlType(TypeName = "image")]
     public class Image
     {
-        [XmlText] public string Url { get; set; }
-        [XmlAttribute(AttributeName = "type")] public string? Type { get; set; }
-        [XmlIgnore] public int? Size { get; set; }
+        [XmlText] 
+        public string Url { get; set; }
+        [XmlAttribute(AttributeName = "type")] 
+        public string? Type { get; set; }
 
         [XmlAttribute(AttributeName = "orient")]
         public string? Orientation { get; set; }
@@ -112,10 +113,13 @@ namespace EpgMgr.XmlTV
         public string? System { get; set; }
 
         [XmlAttribute(AttributeName = "size")]
-        public string? SizeXml
+        public string? SizeXml { get; set; }
+
+        [XmlIgnore]
+        public int? Size
         {
-            get => Size.ToString();
-            set => Size = value == null ? null : int.Parse(value);
+            get => Size = SizeXml == null ? null : int.Parse(SizeXml);
+            set => SizeXml = value?.ToString();
         }
 
         public Image()
