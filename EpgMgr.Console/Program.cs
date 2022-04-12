@@ -41,12 +41,11 @@ if (!coreSigned || !coreKey.Equals(publicKey))
 
 var lastStatus = string.Empty;
 var progressMode = false;
-var core = new Core();
+var core = new Core(UpdateFeedback);
 
 var context = core.CommandMgr.RootFolder;
 Console.WriteLine($"EpgMgr Console {Assembly.GetExecutingAssembly().GetName().Version}");
-Console.Write($"{context.FolderPath} :: ");
-core.FeedbackMgr.FeedbackChanged += UpdateFeedback;
+ShowPrompt(context);
 while (true)
 {
     ProcessCommand();
@@ -63,6 +62,14 @@ void ProcessCommand()
     }
 
     Console.Write(result);
+    ShowPrompt(context);
+}
+
+void ShowPrompt(FolderEntry context)
+{
+    Console.ForegroundColor = ConsoleColor.Cyan;
+    Console.Write($"{context.FolderPath} :: ");
+    Console.ForegroundColor = ConsoleColor.White;
 }
 
 void UpdateFeedback(object? sender, FeedbackEventArgs eventArgs)

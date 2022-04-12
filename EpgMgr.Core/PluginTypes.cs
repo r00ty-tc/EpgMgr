@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
@@ -59,37 +60,6 @@ namespace EpgMgr.Plugins
     }
 
     /// <summary>
-    /// Configuration Value type. Specifies the standard type for the value in this field
-    /// </summary>
-    public enum ConfigValueType
-    {
-        /// <summary>
-        /// string
-        /// </summary>
-        ConfigValueType_String = 1,
-        /// <summary>
-        /// bool
-        /// </summary>
-        ConfigValueType_Bool = 2,
-        /// <summary>
-        /// int
-        /// </summary>
-        ConfigValueType_Int32 = 3,
-        /// <summary>
-        /// long
-        /// </summary>
-        ConfigValueType_Int64 = 4,
-        /// <summary>
-        /// decimal
-        /// </summary>
-        ConfigValueType_Decimal = 5,
-        /// <summary>
-        /// double
-        /// </summary>
-        ConfigValueType_Double = 6
-    }
-
-    /// <summary>
     /// Configuration Entry. A nested confuration entry. The root of which is the master configuration
     /// </summary>
     //[XmlType(TypeName = "PluginConfig")]
@@ -113,12 +83,14 @@ namespace EpgMgr.Plugins
         [XmlAttribute]
         public string? Key { get; set; }
         [XmlIgnore]
-        public ConfigValueType? ValueType { get; set; }
+        public ValueType? ValueType { get; set; }
         public dynamic? Value { get; set; }
         [XmlAttribute]
         public string? Path { get; set; }
         [XmlAttribute]
         public string? ConsoleId { get; set; }
+        [XmlAttribute]
+        public bool ConsoleHidden { get; set; }
         [XmlIgnore]
         public ConfigEntry? RootEntry { get; }
         [XmlIgnore]
@@ -137,7 +109,7 @@ namespace EpgMgr.Plugins
             }
         }
 
-        [XmlAttribute("ConfigValueType")]
+        [XmlAttribute("ValueType")]
         public string? ConfigValueTypeXml
         {
             get => ValueType.HasValue ? ((int)ValueType).ToString() : null;
@@ -146,7 +118,7 @@ namespace EpgMgr.Plugins
                 if (value == null)
                     ValueType = null;
                 else
-                    ValueType = (ConfigValueType)int.Parse(value);
+                    ValueType = (ValueType)int.Parse(value);
             }
         }
 
@@ -162,12 +134,13 @@ namespace EpgMgr.Plugins
         /// <param name="parentEntry"></param>
         /// <param name="pluginId"></param>
         /// <param name="pluginName"></param>
-        public ConfigEntry(ConfigEntry? parentEntry = null, string? pluginId = null, string? pluginName = null)
+        public ConfigEntry(ConfigEntry? parentEntry = null, string? pluginId = null, string? pluginName = null, bool consoleHidden = false)
         {
             PluginId = pluginId;
             PluginName = pluginName;
             ParentEntry = parentEntry;
             RootEntry = parentEntry != null ? parentEntry.FindRootRecursive() : this;
+            ConsoleHidden = consoleHidden;
             ConfigType = ConfigEntryType.ConfigEntryType_Folder;
             ConfigFolders = new List<ConfigEntry>();
             ConfigEntries = new List<ConfigEntry>();
@@ -212,19 +185,19 @@ namespace EpgMgr.Plugins
         public static ConfigEntry NewConfigEntry<T>(ConfigEntry folder, string key, T? value = default(T),
             string? consoleId = null)
         {
-            ConfigValueType? thisType = null;
+            ValueType? thisType = null;
             if (typeof(T) == typeof(string))
-                thisType = ConfigValueType.ConfigValueType_String;
+                thisType = EpgMgr.ValueType.ConfigValueType_String;
             else if (typeof(T) == typeof(int))
-                thisType = ConfigValueType.ConfigValueType_Int32;
+                thisType = EpgMgr.ValueType.ConfigValueType_Int32;
             else if (typeof(T) == typeof(bool))
-                thisType = ConfigValueType.ConfigValueType_Bool;
+                thisType = EpgMgr.ValueType.ConfigValueType_Bool;
             else if (typeof(T) == typeof(decimal))
-                thisType = ConfigValueType.ConfigValueType_Decimal;
+                thisType = EpgMgr.ValueType.ConfigValueType_Decimal;
             else if (typeof(T) == typeof(double))
-                thisType = ConfigValueType.ConfigValueType_Double;
+                thisType = EpgMgr.ValueType.ConfigValueType_Double;
             else if (typeof(T) == typeof(long))
-                thisType = ConfigValueType.ConfigValueType_Int64;
+                thisType = EpgMgr.ValueType.ConfigValueType_Int64;
             else
                 throw new Exception("Invalid config type");
 
@@ -293,12 +266,12 @@ namespace EpgMgr.Plugins
         /// <returns></returns>
         public T? GetValue<T>()
         {
-            if (typeof(T) == typeof(string) && ValueType == ConfigValueType.ConfigValueType_String) return (T?)Value;
-            if (typeof(T) == typeof(int) && ValueType == ConfigValueType.ConfigValueType_Int32) return int.Parse(Value);
-            if (typeof(T) == typeof(long) && ValueType == ConfigValueType.ConfigValueType_Int64) return long.Parse(Value);
-            if (typeof(T) == typeof(bool) && ValueType == ConfigValueType.ConfigValueType_Bool) return bool.Parse(Value);
-            if (typeof(T) == typeof(decimal) && ValueType == ConfigValueType.ConfigValueType_Decimal) return decimal.Parse(Value);
-            if (typeof(T) == typeof(double) && ValueType == ConfigValueType.ConfigValueType_Double) return double.Parse(Value);
+            if (typeof(T) == typeof(string) && ValueType == EpgMgr.ValueType.ConfigValueType_String) return (T?)Value;
+            if (typeof(T) == typeof(int) && ValueType == EpgMgr.ValueType.ConfigValueType_Int32) return (T?)Value;
+            if (typeof(T) == typeof(long) && ValueType == EpgMgr.ValueType.ConfigValueType_Int64) return (T?)Value;
+            if (typeof(T) == typeof(bool) && ValueType == EpgMgr.ValueType.ConfigValueType_Bool) return (T?)Value;
+            if (typeof(T) == typeof(decimal) && ValueType == EpgMgr.ValueType.ConfigValueType_Decimal) return (T?)Value;
+            if (typeof(T) == typeof(double) && ValueType == EpgMgr.ValueType.ConfigValueType_Double) return (T?)Value;
             return default(T);
         }
 
@@ -310,13 +283,31 @@ namespace EpgMgr.Plugins
         /// <exception cref="ArgumentException"></exception>
         public void SetValue<T>(T value)
         {
-            if (typeof(T) == typeof(string) && ValueType == ConfigValueType.ConfigValueType_String) Value = value;
-            else if (typeof(T) == typeof(int) && ValueType == ConfigValueType.ConfigValueType_Int32) Value = value;
-            else if (typeof(T) == typeof(long) && ValueType == ConfigValueType.ConfigValueType_Int64) Value = value;
-            else if (typeof(T) == typeof(bool) && ValueType == ConfigValueType.ConfigValueType_Bool) Value = value;
-            else if (typeof(T) == typeof(decimal) && ValueType == ConfigValueType.ConfigValueType_Decimal) Value = value;
-            else if (typeof(T) == typeof(double) && ValueType == ConfigValueType.ConfigValueType_Double) Value = value;
+            if (typeof(T) == typeof(string) && ValueType == EpgMgr.ValueType.ConfigValueType_String) Value = value;
+            else if (typeof(T) == typeof(int) && ValueType == EpgMgr.ValueType.ConfigValueType_Int32) Value = value;
+            else if (typeof(T) == typeof(long) && ValueType == EpgMgr.ValueType.ConfigValueType_Int64) Value = value;
+            else if (typeof(T) == typeof(bool) && ValueType == EpgMgr.ValueType.ConfigValueType_Bool) Value = value;
+            else if (typeof(T) == typeof(decimal) && ValueType == EpgMgr.ValueType.ConfigValueType_Decimal) Value = value;
+            else if (typeof(T) == typeof(double) && ValueType == EpgMgr.ValueType.ConfigValueType_Double) Value = value;
             else throw new ArgumentException($"Invalid type {typeof(T)} passed as argument when expecting {ValueType}");
+        }
+
+        public T? GetValue<T>(string valueId)
+        {
+            if (ConfigEntries == null) return default(T);
+            var valueObj = this.ConfigEntries.FirstOrDefault(row =>
+                row.ConfigType.Equals(ConfigEntryType.ConfigEntryType_ConfigEntry) && row.Key != null && row.Key.Equals(valueId));
+
+            return valueObj != null ? valueObj.GetValue<T>() : default(T);
+        }
+
+        public void SetValue<T>(string valueId, T value)
+        {
+            if (ConfigEntries == null) return;
+            var valueObj = this.ConfigEntries.FirstOrDefault(row =>
+                row.ConfigType.Equals(ConfigEntryType.ConfigEntryType_ConfigEntry) && row.Key != null && row.Key.Equals(valueId));
+
+            valueObj?.SetValue<T>(value);
         }
 
         /// <summary>

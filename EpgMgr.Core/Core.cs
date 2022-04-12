@@ -12,12 +12,13 @@ namespace EpgMgr
         private Config m_config;
         private List<Type> m_configTypes;
         public CommandManager CommandMgr;
+        public Config Config => m_config;
 
-        public Core()
+        public Core(EventHandler<FeedbackEventArgs>? feedback = null)
         {
             m_config = new Config();
             m_configTypes = new List<Type>();
-            FeedbackMgr = new UserFeedbackManager();
+            FeedbackMgr = new UserFeedbackManager(feedback);
             PluginMgr = new PluginManager(this);
             
             // Load core config only
@@ -44,7 +45,7 @@ namespace EpgMgr
             // We add plugin configs direct to XML just in case a plugin writer needs some custom XML code to store their config
             var pluginConfigsElement = configXml.CreateElement("PluginConfigs");
             // Gather all unique extra types for each plugin
-            foreach (var plugin in PluginMgr.Plugins)
+            foreach (var plugin in PluginMgr.LoadedPlugins)
             {
                 var configNode = plugin.PluginObj.SaveConfig();
                 var node = (XmlElement) configXml.ImportNode(configNode, true);
@@ -76,11 +77,11 @@ namespace EpgMgr
 
             if (coreOnly) return;
             var plugins = PluginMgr.PluginNames;
-            if (m_config.EnabledPlugins == null || !plugins.Any())
+            /*if (m_config.EnabledPlugins == null || !plugins.Any())
             {
                 var allPlugins = GetAllPlugins();
                 m_config.EnabledPlugins = allPlugins.ToList();
-            }
+            }*/
             PluginMgr.LoadPlugins(m_config.EnabledPlugins);
 
             // Now load plugin configs
@@ -92,24 +93,14 @@ namespace EpgMgr
             foreach (XmlElement pluginElement in pluginConfigs)
             {
                 var pluginId = pluginElement.GetAttribute("Id");
-                var plugin = PluginMgr.Plugins.FirstOrDefault(row => row.PluginObj.Id.ToString().Equals(pluginId));
+                var plugin = PluginMgr.LoadedPlugins.FirstOrDefault(row => row.PluginObj.Id.ToString().Equals(pluginId));
                 plugin?.PluginObj.LoadConfig(pluginElement);
             }
         }
 
-        public IEnumerable<PluginConfigEntry> GetAllPlugins()
-        {
-            var fileList = Directory.GetFiles("Plugins", "*.dll");
+        public IEnumerable<PluginConfigEntry> GetAllPlugins() => PluginMgr.GetAllPlugins();
 
-            return (
-                from file in fileList 
-                let plugin = PluginMgr.getPlugin(file) 
-                where plugin != null 
-                select new PluginConfigEntry(plugin.Id.ToString(), plugin.Name, new FileInfo(file).Name)
-            ).ToList();
-        }
-
-        public IEnumerable<Plugin> GetActivePlugins() => PluginMgr.Plugins.Select(row => row.PluginObj);
+        public IEnumerable<Plugin> GetActivePlugins() => PluginMgr.LoadedPlugins.Select(row => row.PluginObj);
 
         public string HandleCommand(ref FolderEntry context, string command) => CommandMgr.HandleCommand(ref context, command);
     }

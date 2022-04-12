@@ -36,7 +36,8 @@ namespace EpgMgr
             @"ACQAAASAAACUAAAABgIAAAAkAABSU0ExAAQAAAEAAQARxlX6t+1egIc1MJrKwtps2mo1/bTVtCIDsNRDPIUfCmqT8H8PPThLun8mt0PCETALXhM+R+g0du22vb1Usqd1HOhP8wUYxJJyF21hQoKXAh3Wl8Y/EHLyrRCJeS2QLbIredprzcOnrT0/tNX+0tWwaVwHdeQpiE17fSzzlNBfsg==";
 #endif
 
-        private readonly List<PluginEntry> m_plugins;
+        private readonly List<PluginEntry> m_loadedPlugins;
+        private List<PluginConfigEntry> m_pluginConfigs;
         private readonly Core m_core;
         private readonly string folderSeparator;
         public string[] PluginConsoleNames { get; private set; }
@@ -44,34 +45,116 @@ namespace EpgMgr
         public PluginManager(Core core)
         {
             m_core = core;
-            m_plugins = new List<PluginEntry>();
+            m_loadedPlugins = new List<PluginEntry>();
+            m_pluginConfigs = new List<PluginConfigEntry>();
             PluginConsoleNames = new string[] { };
             folderSeparator = Environment.OSVersion.Platform == PlatformID.Unix ? "/" : "\\";
         }
 
-        internal IEnumerable<PluginEntry> Plugins => m_plugins;
+        internal IEnumerable<PluginEntry> LoadedPlugins => m_loadedPlugins;
 
         public void LoadPlugins(IEnumerable<PluginConfigEntry> enabledPlugins)
         {
             // Clear all current plugins (GC needs to deal with this)
-            m_plugins.Clear();
+            m_loadedPlugins.Clear();
             m_core.FeedbackMgr.UpdateStatus("Loading plugins");
             foreach (var entry in enabledPlugins)
             {
-                var plugin = getPlugin($"Plugins{folderSeparator}{entry.DllFile}");
+                var plugin = getPlugin($"{entry.DllFile}", true);
                 if (plugin == null) continue;
-                m_plugins.Add(new PluginEntry(plugin.GetType(), plugin.Name, plugin));
+                m_loadedPlugins.Add(new PluginEntry(plugin.GetType(), plugin.Name, plugin));
                 m_core.FeedbackMgr.UpdateStatus($"Loaded plugin {plugin.Name} V{plugin.Version}");
             }
-            m_core.FeedbackMgr.UpdateStatus($"Done loading {m_plugins.Count} plugins");
+            m_core.FeedbackMgr.UpdateStatus($"Done loading {m_loadedPlugins.Count} plugins");
 
-            PluginConsoleNames = m_plugins.Select(row => row.PluginObj.ConsoleName).ToArray();
+            PluginConsoleNames = m_loadedPlugins.Select(row => row.PluginObj.ConsoleName).ToArray();
             if (m_core.CommandMgr != null)
                 m_core.CommandMgr.RefreshPlugins();
         }
 
-        internal Plugin? getPlugin(string filename)
+        public IEnumerable<PluginConfigEntry> GetAllPlugins(bool forceRefrest = false)
         {
+            if (!forceRefrest && m_pluginConfigs.Any())
+                return m_pluginConfigs;
+
+            var fileList = Directory.GetFiles("Plugins", "*.dll");
+            m_pluginConfigs = 
+            (
+                from file in fileList
+                let plugin = getPlugin(file)
+                where plugin != null
+                select new PluginConfigEntry(plugin.Id.ToString(), plugin.Name, new FileInfo(file).Name, plugin.ConsoleName)
+            ).ToList();
+
+            return m_pluginConfigs;
+        }
+        public void EnablePlugin(string? guid, string? consoleId = null, string? name = null)
+        {
+            if (guid == name && consoleId == null && name == null)
+                throw new ArgumentException("EnablePlugin invoked with no valid arguments");
+
+            if (!m_pluginConfigs.Any())
+                GetAllPlugins();
+
+            var pluginConfig = m_pluginConfigs.FirstOrDefault(
+                row => guid != null ? row.Id.Equals(guid, StringComparison.InvariantCultureIgnoreCase) :
+                    1 == 0 ||
+                    consoleId != null ? row.ConsoleId.Equals(consoleId, StringComparison.CurrentCultureIgnoreCase) :
+                    1 == 0 ||
+                    name != null ? row.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase) : 1 == 0);
+
+            if (pluginConfig == null)
+            {
+                m_core.FeedbackMgr.UpdateStatus("Failed to find plugin" + guid != null ? $"Guid: {guid}" : "" + consoleId != null ? $"ConsoleId: {consoleId}" : "" + name != null ? $"Name: {name}" : "");
+                return;
+            }
+
+            m_core.Config.EnabledPlugins.Add(pluginConfig);
+            var plugin = getPlugin(pluginConfig.DllFile, true);
+            m_core.FeedbackMgr.UpdateStatus($"Loaded plugin {plugin.Name} V{plugin.Version}");
+            m_loadedPlugins.Add(new PluginEntry(plugin.GetType(), plugin.Name, plugin));
+        }
+
+        public void DisablePlugin(string? guid, string? consoleId = null, string? name = null)
+        {
+            if (guid == name && consoleId == null && name == null)
+                throw new ArgumentException("EnablePlugin invoked with no valid arguments");
+
+            if (!m_pluginConfigs.Any())
+                GetAllPlugins();
+
+            var pluginConfig = m_pluginConfigs.FirstOrDefault(
+                row => guid != null ? row.Id.Equals(guid, StringComparison.InvariantCultureIgnoreCase) :
+                    1 == 0 ||
+                    consoleId != null ? row.ConsoleId.Equals(consoleId, StringComparison.CurrentCultureIgnoreCase) :
+                    1 == 0 ||
+                    name != null ? row.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase) : 1 == 0);
+
+            if (pluginConfig == null)
+            {
+                m_core.FeedbackMgr.UpdateStatus("Failed to find plugin" + guid != null ? $"Guid: {guid}" : "" + consoleId != null ? $"ConsoleId: {consoleId}" : "" + name != null ? $"Name: {name}" : "");
+                return;
+            }
+
+            m_core.Config.EnabledPlugins.Remove(pluginConfig);
+            var pluginEntry =
+                m_loadedPlugins.FirstOrDefault(row => row.PluginObj.Id.ToString().Equals(pluginConfig.Id));
+
+            if (pluginEntry == null)
+            {
+                m_core.FeedbackMgr.UpdateStatus("Failed to unload plugin" + guid != null ? $"Guid: {guid}" : "" + consoleId != null ? $"ConsoleId: {consoleId}" : "" + name != null ? $"Name: {name}" : "");
+                return;
+            }
+
+            m_loadedPlugins.Remove(pluginEntry);
+            m_core.FeedbackMgr.UpdateStatus($"Unloaded plugin {pluginConfig.Name} V{pluginEntry.PluginObj.Version}");
+        }
+
+        internal Plugin? getPlugin(string filename, bool addPluginFolder = false)
+        {
+            if (addPluginFolder)
+                filename = $"Plugins{folderSeparator}{filename}";
+
             if (!File.Exists(filename))
                 return null;
 
@@ -96,6 +179,6 @@ namespace EpgMgr
                 ).FirstOrDefault(thisPlugin => thisPlugin != null);
         }
 
-        public string[] PluginNames => m_plugins.Select(row => row.PluginObj.Name).ToArray();
+        public string[] PluginNames => m_loadedPlugins.Select(row => row.PluginObj.Name).ToArray();
     }
 }

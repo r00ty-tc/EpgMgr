@@ -52,8 +52,10 @@ namespace EpgMgr
         public event EventHandler<FeedbackEventArgs>? FeedbackChanged;
         public FeedbackInfo Info { get; set; }
 
-        public UserFeedbackManager()
+        public UserFeedbackManager(EventHandler<FeedbackEventArgs>? feedback = null)
         {
+            if (feedback != null)
+                FeedbackChanged += feedback;
             feedbackLock = new ReaderWriterLockSlim();
             Info = new FeedbackInfo();
         }

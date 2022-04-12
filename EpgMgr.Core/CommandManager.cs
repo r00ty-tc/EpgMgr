@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -30,33 +31,26 @@ namespace EpgMgr
             GlobalCommands = new List<CommandReference>();
             LocalCommands = new Dictionary<FolderEntry, List<CommandReference>>();
 
-            // Register global commands
-            RegisterCommand("cd", CommandHandlerCommands.CommandHandlerCD);
-            RegisterCommand("ls", CommandHandlerCommands.CommandHandlerLS);
-            RegisterCommand("dir", CommandHandlerCommands.CommandHandlerLS);
-            RegisterCommand("exit", CommandHandlerCommands.CommandHandlerEXIT);
-            RegisterCommand("quit", CommandHandlerCommands.CommandHandlerEXIT);
-            RegisterCommand("save", CommandHandlerCommands.CommandHandlerSAVE);
-            RegisterCommand("reload", CommandHandlerCommands.CommandHandlerRELOAD);
-            RegisterCommand("run", CommandHandlerCommands.CommandHandlerRUN);
-            RegisterCommand("?", CommandHandlerCommands.CommandHandlerLISTCMDS);
-
             // Register folder layout
             RootFolder = new FolderEntry("/", null);
-            var configFolder = RootFolder.AddChild("config");
-            var coreConfigFolder = configFolder.AddChild("core");
-            var pluginConfigFolder = configFolder.AddChild("plugins");
+            var configFolder = RootFolder.AddChildFolder("config");
+            var coreConfigFolder = configFolder.AddChildFolder("core");
+            var coreXmlTvFolder = coreConfigFolder.AddChildFolder("xmltv");
+            var pluginConfigFolder = configFolder.AddChildFolder("plugins");
+
+            // Register commands
+            CommandHandlerCommands.RegisterCommands(this, RootFolder);
 
             // Now the plugins
             foreach (var plugin in m_core.GetActivePlugins())
             {
-                var thisPluginConfigFolder = pluginConfigFolder.AddChild(plugin.ConsoleName);
+                var thisPluginConfigFolder = pluginConfigFolder.AddChildFolder(plugin.ConsoleName);
                 plugin.RegisterConfigData(thisPluginConfigFolder);
             }
         }
 
-        public void RegisterCommand(string commandString, CommandMethodHandler method, Plugin? plugin = null,
-            FolderEntry? context = null, int? requiredArgs = null)
+        public void RegisterCommand(string commandString, CommandMethodHandler method, string? usage = null,
+            Plugin? plugin = null, FolderEntry? context = null, int? requiredArgs = null)
         {
             if (context != null)
             {
@@ -83,7 +77,7 @@ namespace EpgMgr
                     throw new Exception($"Global command {commandString} already registered");
             }
 
-            var newCommand = new CommandReference(commandString, method, plugin, context, requiredArgs);
+            var newCommand = new CommandReference(commandString, method, usage, plugin, context, requiredArgs);
             if (newCommand.IsGlobal)
             {
                 GlobalCommands.Add(newCommand);
@@ -137,7 +131,6 @@ namespace EpgMgr
         {
             context ??= RootFolder;
 
-            var prompt = $"{context} :: ";
             if (string.IsNullOrWhiteSpace(command))
                 return $"{context.FolderPath} :: ";
 
@@ -145,15 +138,25 @@ namespace EpgMgr
             var commandLineSplit = ParseArguments(command);
             var commandString = commandLineSplit.First();
             var args = commandLineSplit.TakeLast(commandLineSplit.Length - 1).ToArray();
-            var validCommand = GetValidCommands(context).FirstOrDefault(row => row.CommandString.Equals(commandString, StringComparison.InvariantCultureIgnoreCase));
-            if (validCommand == null) return $"Invalid Command {commandString}" + Environment.NewLine + "{context} :: ";
-            var result = validCommand.Method(m_core, ref context, commandString, args) + Environment.NewLine;
-            result += $"{context.FolderPath} :: ";
-            return result;
 
+            // Get command and check validity
+            var validCommand = GetValidCommands(context).FirstOrDefault(row => row.CommandString.Equals(commandString, StringComparison.InvariantCultureIgnoreCase));
+            if (validCommand == null) return $"Invalid Command {commandString}" + Environment.NewLine;
+
+            // Validate required arguments
+            if (validCommand.RequiredArgs != null && args.Length < validCommand.RequiredArgs)
+                return $"Invalid Arguments{Environment.NewLine}{validCommand.UsageText ?? string.Empty}{Environment.NewLine}";
+
+            // Run command method and return result
+            var result = validCommand.Method(m_core, ref context, commandString, args) + Environment.NewLine;
+
+            // Check context is still valid (mainly for when manipulating plugins). Should be a better way
+            var tempContext = RootFolder;
+            context = !ValidateChangeFolder(ref tempContext, context.FolderPath) ? RootFolder : tempContext;
+            return result;
         }
 
-        protected CommandReference[] GetValidCommands(FolderEntry context)
+        internal CommandReference[] GetValidCommands(FolderEntry context)
         {
             var commands = new List<CommandReference>(GlobalCommands);
             if (LocalCommands.TryGetValue(context, out var localCommands))
@@ -165,8 +168,18 @@ namespace EpgMgr
         public bool ValidateChangeFolder(ref FolderEntry context, string newFolder)
         {
             var tempContext = context;
+            var first = true;
             foreach (var movement in newFolder.Split('/'))
             {
+                // This is just to handle an initial / meaning absolute path
+                if (first && movement.Equals(String.Empty))
+                {
+                    GetRootConfigFolder(ref tempContext);
+                    first = false;
+                    continue;
+                }
+                first = false;
+
                 var validFolder = tempContext.ChildFolders.FirstOrDefault(row => row.FolderName.Equals(movement, StringComparison.InvariantCultureIgnoreCase));
                 // Handle .. specifically, it's special
                 if (movement.Equals("..") && tempContext.ParentFolder != null)
@@ -178,6 +191,12 @@ namespace EpgMgr
             }
             context = tempContext;
             return true;
+        }
+
+        internal static void GetRootConfigFolder(ref FolderEntry context)
+        {
+            while (context.ParentFolder != null)
+                context = context.ParentFolder;
         }
     }
 }
