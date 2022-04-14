@@ -1,5 +1,4 @@
 ﻿// See https://aka.ms/new-console-template for more information
-//Console.WriteLine("Hello, World!");
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -44,7 +43,7 @@ var progressMode = false;
 var core = new Core(UpdateFeedback);
 
 var context = core.CommandMgr.RootFolder;
-Console.WriteLine($"EpgMgr Console {Assembly.GetExecutingAssembly().GetName().Version}");
+ConsoleControl.WriteLine($"EpgMgr Console {Assembly.GetExecutingAssembly().GetName().Version}");
 ShowPrompt(context);
 while (true)
 {
@@ -57,19 +56,17 @@ void ProcessCommand()
     var result = core.HandleCommand(ref context, command ?? string.Empty);
     if (result.StartsWith("**END**"))
     {
-        Console.WriteLine("Exiting..");
+        ConsoleControl.WriteLine("Exiting..");
         System.Environment.Exit(0);
     }
 
-    Console.Write(result);
+    ConsoleControl.Write(result);
     ShowPrompt(context);
 }
 
 void ShowPrompt(FolderEntry context)
 {
-    Console.ForegroundColor = ConsoleColor.Cyan;
-    Console.Write($"{context.FolderPath} :: ");
-    Console.ForegroundColor = ConsoleColor.White;
+    ConsoleControl.Write($"{ConsoleControl.SetFG(ConsoleColor.Cyan)}{context.FolderPath} :: {ConsoleControl.SetFG(ConsoleColor.White)}");
 }
 
 void UpdateFeedback(object? sender, FeedbackEventArgs eventArgs)
@@ -79,7 +76,7 @@ void UpdateFeedback(object? sender, FeedbackEventArgs eventArgs)
         // Handle straightforward message update
         if (progressMode)
             progressMode = false;
-        Console.WriteLine(eventArgs.Info.Status);
+        ConsoleControl.WriteLine(eventArgs.Info.Status);
     }
     else
     {
@@ -88,8 +85,8 @@ void UpdateFeedback(object? sender, FeedbackEventArgs eventArgs)
         int progress = (int)Math.Round(eventArgs.Info.Percent / 4, 0, MidpointRounding.AwayFromZero);
         var statusString = $"{eventArgs.Info.Status,-35}[{new string('▓', progress)}{new string('░', 25 - progress)}] {eventArgs.Info.CurrentItem}/{eventArgs.Info.MaxItems} ({Math.Round(eventArgs.Info.Percent, 2):0.00}%)";
         if (!lastStatus.Equals(eventArgs.Info.Status))
-            Console.Write(Environment.NewLine);
-        Console.Write(statusString + new string('\b', statusString.Length));
+            ConsoleControl.Write(Environment.NewLine);
+        ConsoleControl.Write(statusString + new string('\b', statusString.Length));
         lastStatus = eventArgs.Info.Status;
     }
 }

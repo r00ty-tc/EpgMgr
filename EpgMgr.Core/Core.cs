@@ -6,11 +6,11 @@ namespace EpgMgr
 {
     public class Core
     {
+        private Config m_config;
+        private List<Type> m_configTypes;
         public static readonly string CONFIG_FILE = "Config.xml";
         public PluginManager PluginMgr;
         public UserFeedbackManager FeedbackMgr { get; set; }
-        private Config m_config;
-        private List<Type> m_configTypes;
         public CommandManager CommandMgr;
         public Config Config => m_config;
 
@@ -26,7 +26,6 @@ namespace EpgMgr
             CommandMgr = new CommandManager(this);
             LoadConfig();
             CommandMgr.RefreshPlugins();
-            //SaveConfig();
         }
 
         public long SaveConfig()

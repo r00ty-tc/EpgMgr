@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -39,7 +40,17 @@ namespace EpgMgr
             var pluginConfigFolder = configFolder.AddChildFolder("plugins");
 
             // Register commands
-            CommandHandlerCommands.RegisterCommands(this, RootFolder);
+            CoreCommands.RegisterCommands(this, RootFolder);
+
+            // Register variables
+            coreXmlTvFolder.AddChildValue("DateMode", SetgetXmlTvValue, ValueType.ConfigValueType_String);
+            coreXmlTvFolder.AddChildValue("IncludeProgrammeCredits", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
+            coreXmlTvFolder.AddChildValue("IncludeProgrammeCategories", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
+            coreXmlTvFolder.AddChildValue("IncludeProgrammeIcons", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
+            coreXmlTvFolder.AddChildValue("IncludeProgrammeRatings", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
+            coreXmlTvFolder.AddChildValue("IncldeProgrammeStarRatings", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
+            coreXmlTvFolder.AddChildValue("IncludeProgrammeReviews", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
+            coreXmlTvFolder.AddChildValue("IncludeProgrammeImages", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
 
             // Now the plugins
             foreach (var plugin in m_core.GetActivePlugins())
@@ -132,7 +143,7 @@ namespace EpgMgr
             context ??= RootFolder;
 
             if (string.IsNullOrWhiteSpace(command))
-                return $"{context.FolderPath} :: ";
+                return "";
 
             // Split command as command line (supporting quotes etc)
             var commandLineSplit = ParseArguments(command);
@@ -197,6 +208,78 @@ namespace EpgMgr
         {
             while (context.ParentFolder != null)
                 context = context.ParentFolder;
+        }
+        private void SetgetXmlTvValue(FolderEntry context, string valuename, ValueType type, ref dynamic? value)
+        {
+            try
+            {
+                switch (valuename.ToLower())
+                {
+                    case "datemode":
+                        if (value == null)
+                        {
+                            value = (int)m_core.Config.XmlTvConfig.DateMode == 0 ? "offset" :
+                                m_core.Config.XmlTvConfig.DateMode == 1 ? "utc" : null;
+                        }
+                        else
+                        {
+                            if (((string)value).Equals("offset", StringComparison.InvariantCultureIgnoreCase))
+                                m_core.Config.XmlTvConfig.DateMode = 0;
+                            if (((string)value).Equals("utc", StringComparison.InvariantCultureIgnoreCase))
+                                m_core.Config.XmlTvConfig.DateMode = 1;
+                        }
+
+                        return;
+                    case "includeprogrammecredits":
+                        if (value == null)
+                            value = m_core.Config.XmlTvConfig.IncludeProgrammeCredits;
+                        else
+                            m_core.Config.XmlTvConfig.IncludeProgrammeCredits = (bool)value;
+                        return;
+                    case "includeprogrammecategories":
+                        if (value == null)
+                            value = m_core.Config.XmlTvConfig.IncludeProgrammeCategories;
+                        else
+                            m_core.Config.XmlTvConfig.IncludeProgrammeCategories = (bool)value;
+                        return;
+                    case "includeprogrammeicons":
+                        if (value == null)
+                            value = m_core.Config.XmlTvConfig.IncludeProgrammeIcons;
+                        else
+                            m_core.Config.XmlTvConfig.IncludeProgrammeIcons = (bool)value;
+                        return;
+                    case "includeprogrammeratings":
+                        if (value == null)
+                            value = m_core.Config.XmlTvConfig.IncludeProgrammeRatings;
+                        else
+                            m_core.Config.XmlTvConfig.IncludeProgrammeRatings = (bool)value;
+                        return;
+                    case "incldeprogrammestarratings":
+                        if (value == null)
+                            value = m_core.Config.XmlTvConfig.IncldeProgrammeStarRatings;
+                        else
+                            m_core.Config.XmlTvConfig.IncldeProgrammeStarRatings = (bool)value;
+                        return;
+                    case "includeprogrammereviews":
+                        if (value == null)
+                            value = m_core.Config.XmlTvConfig.IncludeProgrammeReviews;
+                        else
+                            m_core.Config.XmlTvConfig.IncludeProgrammeReviews = (bool)value;
+                        return;
+                    case "includeprogrammeimages":
+                        if (value == null)
+                            value = m_core.Config.XmlTvConfig.IncludeProgrammeImages;
+                        else
+                            m_core.Config.XmlTvConfig.IncludeProgrammeImages = (bool)value;
+                        return;
+                    default:
+                        break;
+                }
+            }
+            catch
+            {
+                m_core.FeedbackMgr.UpdateStatus("Invalid type used");
+            }
         }
     }
 }

@@ -63,7 +63,7 @@ namespace EpgMgr
                 var plugin = getPlugin($"{entry.DllFile}", true);
                 if (plugin == null) continue;
                 m_loadedPlugins.Add(new PluginEntry(plugin.GetType(), plugin.Name, plugin));
-                m_core.FeedbackMgr.UpdateStatus($"Loaded plugin {plugin.Name} V{plugin.Version}");
+                m_core.FeedbackMgr.UpdateStatus($"Loaded plugin {ConsoleControl.SetFG(ConsoleColor.Green)}{plugin.Name}{ConsoleControl.SetFG(ConsoleColor.White)} V{plugin.Version}");
             }
             m_core.FeedbackMgr.UpdateStatus($"Done loading {m_loadedPlugins.Count} plugins");
 

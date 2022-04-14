@@ -10,7 +10,7 @@ using EpgMgr.Plugins;
 
 namespace EpgMgr
 {
-    internal class CommandHandlerCommands
+    internal class CoreCommands
     {
         internal static void RegisterCommands(CommandManager mgr, FolderEntry context)
         {
@@ -136,10 +136,12 @@ namespace EpgMgr
             var maxFolder = context.ChildFolders.Any() ? context.ChildFolders.Max(row => row.FolderName.Length) : 0;
             var maxValue = context.ChildValues.Any() ? context.ChildValues.Max(row => row.ValueId.Length) : 0;
             var maxLength = Math.Max(maxFolder, maxValue);
-            result = string.Join(Environment.NewLine, context.ChildFolders.Select(row => row.FolderName.PadRight(maxLength + 2) + "<Folder>"));
+            result = string.Join(Environment.NewLine, context.ChildFolders.Select(row => row.FolderName.PadRight(maxLength + 2) + ConsoleControl.SetFG(ConsoleColor.Magenta) + "<Folder>" + ConsoleControl.SetFG(ConsoleColor.White)));
             if (context.ChildValues.Any()) result += Environment.NewLine;
             result += string.Join(Environment.NewLine,
-                context.ChildValues.Select(row => $"{row.ValueId.PadRight(maxLength + 1)} = {(row.Type.Equals(ValueType.ConfigValueType_String) ? "\"" : "")}{row.Value}{(row.Type.Equals(ValueType.ConfigValueType_String) ? "\"" : "")}"));
+                context.ChildValues.Select(row => $"{ConsoleControl.SetFG(ConsoleColor.Yellow)}{row.ValueId.PadRight(maxLength + 1)}{ConsoleControl.SetFG(ConsoleColor.White)} = " +
+                                                  $"{ConsoleControl.SetFG(ConsoleColor.Green)}{(row.Type.Equals(ValueType.ConfigValueType_String) ? "\"" : "")}" +
+                                                  $"{row.Value}{(row.Type.Equals(ValueType.ConfigValueType_String) ? "\"" : "")}{ConsoleControl.SetFG(ConsoleColor.White)}"));
 
             if (args.Length == 1)
                 context = tempContext;
@@ -172,12 +174,19 @@ namespace EpgMgr
             if (varObj == null)
                 return $"Invalid variable {variable}";
 
-            // Set the value we need to parse the string to the correct type
-            varObj.Value = ParseValue(args[1], varObj.Type);
+            try
+            {
+                // Set the value we need to parse the string to the correct type
+                varObj.Value = ParseValue(args[1], varObj.Type);
+            }
+            catch (FormatException ex)
+            {
+                return $"{ConsoleControl.SetFG(ConsoleColor.DarkRed)}Invalid format for variable";
+            }
 
             // Restore context and return result
             context = tempContext;
-            return $"{varObj.ValueId} = {varObj.Value}";
+            return $"{ConsoleControl.SetFG(ConsoleColor.Yellow)}{varObj.ValueId}{ConsoleControl.SetFG(ConsoleColor.White)} = {ConsoleControl.SetFG(ConsoleColor.Green)}{varObj.Value}{ConsoleControl.SetFG(ConsoleColor.White)}";
         }
         internal static string CommandHandlerEXIT(Core core, ref FolderEntry context, string command, string[] args)
         {
@@ -204,7 +213,7 @@ namespace EpgMgr
                 return "No commands available.";
 
             if (args.Length == 0)
-                return $"Available commands:{Environment.NewLine}{string.Join(Environment.NewLine, cmds.Select(row => row.CommandString))}";
+                return $"Available commands:{Environment.NewLine}{ConsoleControl.SetFG(ConsoleColor.Green)}{string.Join(Environment.NewLine, cmds.Select(row => row.CommandString))}";
 
             if (args.Length != 1)
             {
@@ -214,7 +223,7 @@ namespace EpgMgr
             }
 
             var cmdInfo = cmds.FirstOrDefault(row =>
-                row.CommandString.Equals(command, StringComparison.InvariantCultureIgnoreCase));
+                row.CommandString.Equals(args[0], StringComparison.InvariantCultureIgnoreCase));
             return cmdInfo != null && cmdInfo.UsageText != null ? cmdInfo.UsageText : "Invalid Argument";
         }
 

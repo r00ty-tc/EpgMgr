@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using EpgMgr.Plugins;
@@ -128,5 +131,53 @@ namespace EpgMgr
             context.AddChildValue(result);
             return result;
         }
+    }
+
+    public class ConsoleControl
+    {
+        private const string EscapePattern = "❛❜";
+        private const string SetFGColourString = "SFG";
+        private const string SetBGColourString = "SBG";
+
+        public static string SetFG(ConsoleColor colour) => EscapePattern + SetFGColourString + ((int)colour).ToString() + EscapePattern;
+        public static string SetBG(ConsoleColor colour) => EscapePattern + SetBGColourString + ((int)colour).ToString() + EscapePattern;
+
+        public static void Write(string text)
+        {
+            var initialFGColour = Console.ForegroundColor;
+            var initialBGColour = Console.BackgroundColor;
+            var splits = text.Split(EscapePattern).ToList();
+            while (splits.Count > 0)
+            {
+                var printText = splits.FirstOrDefault();
+                if (text != null)
+                {
+                    Console.Write(printText);
+                    splits.RemoveAt(0);
+                }
+
+                var commandText = splits.FirstOrDefault();
+                if (commandText == null)
+                    continue;
+                splits.RemoveAt(0);
+                if (commandText.StartsWith(SetFGColourString))
+                {
+                    if (!int.TryParse(commandText.Replace(SetFGColourString, ""), out var value)) continue;
+                    var colour = (ConsoleColor)value;
+                    Console.ForegroundColor = colour;
+                }
+                else if (commandText.StartsWith(SetBGColourString))
+                {
+                    if (!int.TryParse(commandText.Replace(SetBGColourString, ""), out var value)) continue;
+                    var colour = (ConsoleColor)value;
+                    Console.BackgroundColor = colour;
+                }
+            }
+
+            Console.ForegroundColor = initialFGColour;
+            Console.BackgroundColor = initialBGColour;
+        }
+
+        public static void WriteLine(string text) => Write(text + Environment.NewLine);
     }
 }
