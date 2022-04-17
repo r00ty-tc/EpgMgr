@@ -34,6 +34,7 @@ namespace EpgMgr
     public class Config
     {
         public List<PluginConfigEntry> EnabledPlugins { get; set; }
+        public string XmlTvFilename { get; set; }
         public ConfigXmlTv XmlTvConfig { get; set; }
 
         public Config()
@@ -48,22 +49,40 @@ namespace EpgMgr
                 IncludeProgrammeIcons = true,
                 IncludeProgrammeImages = true,
                 IncludeProgrammeRatings = true, 
-                IncludeProgrammeReviews = true
-            };
+                IncludeProgrammeReviews = true,
+                Filename = "Default-Guide.xml",
+                MaxDaysBehind = 1,
+                MaxDaysAhead = 5
+        };
         }
     }
 
-    [XmlType]
+    [XmlType(TypeName = "XmlTv")]
     public class ConfigXmlTv
     {
-        public int DateMode; // 0 = Offset, 1 = UTC
-        public bool IncludeProgrammeCredits;
-        public bool IncludeProgrammeCategories;
-        public bool IncludeProgrammeIcons;
-        public bool IncludeProgrammeRatings;
-        public bool IncldeProgrammeStarRatings;
-        public bool IncludeProgrammeReviews;
-        public bool IncludeProgrammeImages;
+        [XmlElement]
+        public string Filename { get; set; }
+        [XmlAttribute(AttributeName = "datemode")]
+        public int DateMode { get; set; } // 0 = Offset, 1 = UTC
+        [XmlAttribute]
+        public bool IncludeProgrammeCredits { get; set; }
+        [XmlAttribute]
+        public bool IncludeProgrammeCategories { get; set; }
+        [XmlAttribute]
+        public bool IncludeProgrammeIcons { get; set; }
+        [XmlAttribute]
+        public bool IncludeProgrammeRatings { get; set; }
+        [XmlAttribute]
+        public bool IncldeProgrammeStarRatings { get; set; }
+        [XmlAttribute]
+        public bool IncludeProgrammeReviews { get; set; }
+        [XmlAttribute]
+        public bool IncludeProgrammeImages { get; set; }
+
+        [XmlAttribute] 
+        public int MaxDaysAhead { get; set; }
+        [XmlAttribute] 
+        public int MaxDaysBehind { get; set; }
     }
     /// <summary>
     /// Configuration Value type. Specifies the standard type for the value in this field

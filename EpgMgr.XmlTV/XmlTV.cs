@@ -69,7 +69,12 @@ namespace EpgMgr.XmlTV
             Programmes.ForEach(row => row.ChannelRef = GetChannel(row.Channel));
 
             // Update links channel -> programme
-            Programmes.ForEach(row => GetChannel(row.Channel).Programmes.Add(row));
+            Programmes.ForEach(row => GetChannel(row.Channel)?.Programmes.Add(row.StartTime, row));
+
+            // Remove invalid programmes
+            var toDelete = Programmes.Where(row => row.ChannelRef == null).ToArray();
+            foreach (var programme in toDelete)
+                DeleteProgramme(programme.StartTime, programme.Channel);
         }
 
         public Channel GetNewChannel(string id, string? displayName = null, string? lang = null, string? iconSource = null, int? iconWidth = null, int? iconHeight = null, string? url = null, string? urlSystem = null)
@@ -99,21 +104,36 @@ namespace EpgMgr.XmlTV
             Programmes.Add(programme);
             programmeLookup.Add(new Tuple<string, string>(channel,programme.StartTimeXml), programme);
             programme.ChannelRef = GetChannel(channel);
-            programme.ChannelRef.Programmes.Add(programme);
+            programme.ChannelRef?.Programmes.Add(programme.StartTime, programme);
             return programme;
         }
 
         public Programme? GetProgramme(DateTimeOffset startTime, string channel) =>
-            programmeLookup.TryGetValue(new Tuple<string, string>(XmlTV.ParseDateTime(startTime), channel),
+            programmeLookup.TryGetValue(new Tuple<string, string>(channel, XmlTV.ParseDateTime(startTime)),
                 out var programme)
                 ? programme
                 : null;
 
         public void DeleteProgramme(DateTimeOffset startTime, string channel)
         {
-            if (!programmeLookup.TryGetValue(new Tuple<string, string>(XmlTV.ParseDateTime(startTime), channel), out var programme)) return;
+            if (!programmeLookup.TryGetValue(new Tuple<string, string>(channel, XmlTV.ParseDateTime(startTime)), out var programme)) return;
             Programmes.Remove(programme);
-            programmeLookup.Remove(new Tuple<string, string>(XmlTV.ParseDateTime(startTime), channel));
+            programme.ChannelRef?.Programmes.Remove(programme.StartTime);
+            programmeLookup.Remove(new Tuple<string, string>(channel, XmlTV.ParseDateTime(startTime)));
+        }
+
+        public void DeleteOverlaps(DateTimeOffset startTime, DateTimeOffset endTime, string channel)
+        {
+            var channelRef = GetChannel(channel);
+            if (channelRef == null)
+                throw new Exception($"Channel {channel} not found");
+
+            var programmes = channelRef.Programmes.Values.Where(row =>
+                ((row.StartTime >= startTime && row.StartTime < endTime) ||
+                (row.StopTime > startTime && row.StopTime <= endTime))).ToArray();
+
+            foreach (var programme in programmes)
+                DeleteProgramme(programme.StartTime, programme.Channel);
         }
 
         public void Save(string filename)

@@ -108,7 +108,7 @@ namespace EpgMgr.XmlTV
             set => StopTimeXml = value.HasValue ? XmlTV.ParseDateTime(value.Value) : null;
         }
         [XmlIgnore]
-        public Channel ChannelRef { get; set; }
+        public Channel? ChannelRef { get; set; }
 
         [XmlIgnore]
         public bool CreditsSpecified

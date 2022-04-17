@@ -51,6 +51,9 @@ namespace EpgMgr
             coreXmlTvFolder.AddChildValue("IncldeProgrammeStarRatings", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
             coreXmlTvFolder.AddChildValue("IncludeProgrammeReviews", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
             coreXmlTvFolder.AddChildValue("IncludeProgrammeImages", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
+            coreXmlTvFolder.AddChildValue("Filename", SetgetXmlTvValue, ValueType.ConfigValueType_String);
+            coreXmlTvFolder.AddChildValue("MaxDaysBehind", SetgetXmlTvValue, ValueType.ConfigValueType_Int32);
+            coreXmlTvFolder.AddChildValue("MaxDaysAhead", SetgetXmlTvValue, ValueType.ConfigValueType_Int32);
 
             // Now the plugins
             foreach (var plugin in m_core.GetActivePlugins())
@@ -271,6 +274,49 @@ namespace EpgMgr
                             value = m_core.Config.XmlTvConfig.IncludeProgrammeImages;
                         else
                             m_core.Config.XmlTvConfig.IncludeProgrammeImages = (bool)value;
+                        return;
+                    case "filename":
+                        if (value == null)
+                            value = m_core.Config.XmlTvConfig.Filename;
+                        else
+                        {
+                            var fullPath = new FileInfo((string)value);
+                            if (!Directory.Exists(fullPath.DirectoryName))
+                            {
+                                m_core.FeedbackMgr.UpdateStatus(
+                                    $"{ConsoleControl.SetFG(ConsoleColor.Red)}Invalid folder {fullPath.DirectoryName}");
+                                return;
+                            }
+
+                            m_core.Config.XmlTvConfig.Filename = (string)value;
+                        }
+
+                        return;
+                    case "maxdaysbehind":
+                        if (value == null)
+                            value = m_core.Config.XmlTvConfig.MaxDaysBehind;
+                        else
+                        {
+                            if ((int)value >= 10)
+                            {
+                                m_core.FeedbackMgr.UpdateStatus($"{ConsoleControl.SetFG(ConsoleColor.Red)}Invalid value. Max is 10 days");
+                                return;
+                            }
+                            m_core.Config.XmlTvConfig.MaxDaysBehind = (int)value;
+                        }
+                        return;
+                    case "maxdaysahead":
+                        if (value == null)
+                            value = m_core.Config.XmlTvConfig.MaxDaysAhead;
+                        else
+                        {
+                            if ((int)value >= 30)
+                            {
+                                m_core.FeedbackMgr.UpdateStatus($"{ConsoleControl.SetFG(ConsoleColor.Red)}Invalid value. Max is 30 days");
+                                return;
+                            }
+                            m_core.Config.XmlTvConfig.MaxDaysAhead = (int)value;
+                        }
                         return;
                     default:
                         break;

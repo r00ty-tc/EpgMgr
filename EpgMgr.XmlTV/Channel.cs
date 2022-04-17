@@ -22,7 +22,7 @@ namespace EpgMgr
         public List<XmlTvUrl> Urls { get; set; }
 
         [XmlIgnore]
-        public List<Programme> Programmes { get; set; }
+        public Dictionary<DateTimeOffset, Programme> Programmes { get; set; }
 
         public Channel(string id, string? displayName = null, string? lang = null, string? iconSource = null, int? iconWidth = null, int? iconHeight = null, string? url = null, string? urlSystem = null)
         {
@@ -37,12 +37,12 @@ namespace EpgMgr
             if (url != null)
                 Urls.Add(new XmlTvUrl(url, urlSystem));
 
-            Programmes = new List<Programme>();
+            Programmes = new Dictionary<DateTimeOffset, Programme>();
         }
 
         public Channel()
         {
-            Programmes = new List<Programme>();
+            Programmes = new Dictionary<DateTimeOffset, Programme>();
         }
 
         public void AddDisplayName(string displayName, string? lang) => DisplayNames.Add(new TextWithLang(displayName, lang));

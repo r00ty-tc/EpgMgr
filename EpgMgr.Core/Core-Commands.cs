@@ -79,7 +79,7 @@ namespace EpgMgr
                     else
                         core.PluginMgr.EnablePlugin(null, args[1]);
                     core.CommandMgr.RefreshPlugins();
-                    return "";
+                    return $"{ConsoleControl.SetFG(ConsoleColor.DarkCyan)}After enabling a plugin it's advised to save configuration to store the new plugin state and any default plugin configuration.";
                 case "disable":
                     if (args.Length != 2)
                         return $"Invalid Arguments. Usage plugin enable <plugin guid or name>";
@@ -88,8 +88,9 @@ namespace EpgMgr
                     else
                         core.PluginMgr.DisablePlugin(null, args[1]);
                     core.CommandMgr.RefreshPlugins();
-                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
-                    return "";
+                    return $"{ConsoleControl.SetFG(ConsoleColor.DarkCyan)}After disabling a plugin it's advised to save configuration to store the new plugin state and remove plugin configuration.";
+                default:
+                    return $"{ConsoleControl.SetFG(ConsoleColor.Red)}Invalid sub-command. Valid are list, enable, disable";
             }
 
             return "";
@@ -174,10 +175,13 @@ namespace EpgMgr
             if (varObj == null)
                 return $"Invalid variable {variable}";
 
+            bool valueChanged = false;
             try
             {
+                var origValue = varObj.Value;
                 // Set the value we need to parse the string to the correct type
                 varObj.Value = ParseValue(args[1], varObj.Type);
+                valueChanged = (!origValue.Equals(varObj.Value));
             }
             catch (FormatException ex)
             {
@@ -186,7 +190,13 @@ namespace EpgMgr
 
             // Restore context and return result
             context = tempContext;
-            return $"{ConsoleControl.SetFG(ConsoleColor.Yellow)}{varObj.ValueId}{ConsoleControl.SetFG(ConsoleColor.White)} = {ConsoleControl.SetFG(ConsoleColor.Green)}{varObj.Value}{ConsoleControl.SetFG(ConsoleColor.White)}";
+
+            // Only show changed value if it changed
+            if (valueChanged)
+                return
+                    $"{ConsoleControl.SetFG(ConsoleColor.Yellow)}{varObj.ValueId}{ConsoleControl.SetFG(ConsoleColor.White)} = {ConsoleControl.SetFG(ConsoleColor.Green)}{varObj.Value}{ConsoleControl.SetFG(ConsoleColor.White)}";
+            else
+                return "";
         }
         internal static string CommandHandlerEXIT(Core core, ref FolderEntry context, string command, string[] args)
         {
@@ -204,7 +214,10 @@ namespace EpgMgr
         }
         internal static string CommandHandlerRUN(Core core, ref FolderEntry context, string command, string[] args)
         {
-            return "";
+            var startTime = DateTime.UtcNow.Ticks;
+            core.MakeXmlTV();
+            return
+                $"Generated XMLTV file {core.Config.XmlTvConfig.Filename} in {new TimeSpan(DateTime.UtcNow.Ticks - startTime).TotalMilliseconds}ms";
         }
         internal static string CommandHandlerHELP(Core core, ref FolderEntry context, string command, string[] args)
         {

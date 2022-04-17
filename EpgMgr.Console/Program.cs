@@ -75,14 +75,18 @@ void UpdateFeedback(object? sender, FeedbackEventArgs eventArgs)
     {
         // Handle straightforward message update
         if (progressMode)
+        {
+            ConsoleControl.WriteLine("");
             progressMode = false;
+        }
+
         ConsoleControl.WriteLine(eventArgs.Info.Status);
     }
     else
     {
         // Otherwise handle progress bar
         progressMode = true;
-        int progress = (int)Math.Round(eventArgs.Info.Percent / 4, 0, MidpointRounding.AwayFromZero);
+        int progress = Math.Min((int)Math.Round(eventArgs.Info.Percent / 4, 0, MidpointRounding.AwayFromZero), 25);
         var statusString = $"{eventArgs.Info.Status,-35}[{new string('▓', progress)}{new string('░', 25 - progress)}] {eventArgs.Info.CurrentItem}/{eventArgs.Info.MaxItems} ({Math.Round(eventArgs.Info.Percent, 2):0.00}%)";
         if (!lastStatus.Equals(eventArgs.Info.Status))
             ConsoleControl.Write(Environment.NewLine);

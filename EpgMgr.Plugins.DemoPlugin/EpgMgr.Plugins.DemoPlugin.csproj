@@ -8,6 +8,12 @@
     <AssemblyOriginatorKeyFile>../EpgMgrPlugin.snk</AssemblyOriginatorKeyFile>
     <DelaySign>False</DelaySign>
     <Configurations>Debug;Release;SignedRelease</Configurations>
+    <RootNamespace>EpgMgr.Plugins</RootNamespace>
+    <AssemblyName>DemoPlugin</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SignedRelease|AnyCPU'">
+    <Optimize>True</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +30,11 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="mkdir $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins&#xD;&#xA;copy $(TargetPath) $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins\$(TargetFileName)" />
+    <ItemGroup>
+		<PluginDll Include="$(TargetPath)"/>
+	</ItemGroup>
+    <!--<Exec Command="mkdir $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins&#xD;&#xA;copy $(TargetPath) $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins\$(TargetFileName)" />-->
+	<Copy SourceFiles="@(PluginDll)" DestinationFolder="$(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins\" />
   </Target>
 
 </Project>

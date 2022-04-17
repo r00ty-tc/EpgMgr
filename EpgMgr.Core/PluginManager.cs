@@ -111,6 +111,12 @@ namespace EpgMgr
 
             m_core.Config.EnabledPlugins.Add(pluginConfig);
             var plugin = getPlugin(pluginConfig.DllFile, true);
+            if (plugin == null)
+            {
+                m_core.FeedbackMgr.UpdateStatus($"Failed to load plugin {pluginConfig.Name}");
+                return;
+            }
+            m_core.LoadPluginConfig(plugin);
             m_core.FeedbackMgr.UpdateStatus($"Loaded plugin {plugin.Name} V{plugin.Version}");
             m_loadedPlugins.Add(new PluginEntry(plugin.GetType(), plugin.Name, plugin));
         }

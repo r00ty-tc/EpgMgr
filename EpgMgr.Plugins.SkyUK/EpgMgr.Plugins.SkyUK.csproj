@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>SkyUK</AssemblyName>
+    <RootNamespace>EpgMgr.Plugins</RootNamespace>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>../EpgMgrPlugin.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EpgMgr.Core\EpgMgr.Core.csproj">
+      <CopyLocal>False</CopyLocal>
+      <CopyLocalSatelliteAssemblies>False</CopyLocalSatelliteAssemblies>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <ItemGroup>
+		<PluginDll Include="$(TargetPath)" />
+	</ItemGroup>
+    <!--<Exec Command="mkdir $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins&#xD;&#xA;copy $(TargetPath) $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins\$(TargetFileName)" />-->
+	<Copy SourceFiles="@(PluginDll)" DestinationFolder="$(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins\" />
+  </Target>
+
+</Project>

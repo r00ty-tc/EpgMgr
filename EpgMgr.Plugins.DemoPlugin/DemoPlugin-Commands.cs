@@ -12,12 +12,13 @@ namespace EpgMgr.Plugins
         public void RegisterCommands(FolderEntry folderEntry)
         {
             // Custom global commands
-            core.CommandMgr.RegisterCommand("progresstest", CommandHandlerPROGRESSTEST, null, this);
-            core.CommandMgr.RegisterCommand("xmltv", CommandHandlerXMLTV, $"xmltv: Test command for xmltv class development{Environment.NewLine}Usage: xmltv [load] [test]",this, null, 1);
+            m_core.CommandMgr.RegisterCommand("progresstest", CommandHandlerPROGRESSTEST, null, this);
+            m_core.CommandMgr.RegisterCommand("xmltv", CommandHandlerXMLTV, $"xmltv: Test command for xmltv class development{Environment.NewLine}Usage: xmltv [load] [test]",this, null, 1);
 
             // Custom local commands
-            core.CommandMgr.RegisterCommand("listchannels", CommandHandlerLISTCHANNELS, $"Lists channels enabled or available{Environment.NewLine}Usage: listchannels [all]",this, folderEntry);
+            m_core.CommandMgr.RegisterCommand("listchannels", CommandHandlerLISTCHANNELS, $"Lists channels enabled or available{Environment.NewLine}Usage: listchannels [all]",this, folderEntry);
         }
+
         public static string CommandHandlerPROGRESSTEST(Core core, ref FolderEntry context, string command, string[] args)
         {
             // Progress bar test

@@ -1,10 +1,12 @@
 ﻿using System.Data;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
 using EpgMgr;
 
 namespace EpgMgr.Plugins
+
 {
     public partial class DemoPlugin : Plugin
     {
@@ -14,20 +16,20 @@ namespace EpgMgr.Plugins
         public override string ConsoleName => "Demo";
 
         public override string Author => "EpgMgr Core Team";
-        public override Channel[] GetAllChannels()
+        public override EpgMgr.Channel[] GetXmlTvChannels()
         {
-            var allChannels = configRoot.GetList<Channel>("ChannelsAvailable") ?? new List<Channel>();
-            return allChannels.ToArray();
+            var subbedChannels = configRoot.GetList<Channel>("ChannelsSubbed") ?? new List<Channel>();
+            var returnChannels = new List<EpgMgr.Channel>();
+            foreach (var channel in subbedChannels)
+            {
+                returnChannels.Add(new EpgMgr.Channel(channel.Id, channel.Name, null, channel.LogoUrl));
+            }
+            return returnChannels.ToArray();
         }
 
-        public override PluginErrors GenerateXmlTv(ref XmlDocument doc)
+        public override PluginErrors GenerateXmlTv(ref XmlTV.XmlTV xmltv)
         {
-            throw new NotImplementedException();
-        }
-
-        public override string[] GetValidFolders(string context)
-        {
-            throw new NotImplementedException();
+            return new PluginErrors();
         }
 
         public override void RegisterConfigData(FolderEntry folderEntry)
@@ -39,9 +41,8 @@ namespace EpgMgr.Plugins
             RegisterCommands(folderEntry);
         }
 
-        public DemoPlugin(Core core) : base(core)
+        public DemoPlugin(Core mCore) : base(mCore)
         {
-            var thisCore = core;
             configTypes.Add(typeof(Channel));
             configTypes.Add(typeof(CustomTag));
             InitConfig();

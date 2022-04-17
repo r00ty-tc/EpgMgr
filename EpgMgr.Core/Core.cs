@@ -1,4 +1,9 @@
-﻿using System.Xml;
+﻿using System.Net;
+using System.Net.Http.Headers;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+using System.Text;
+using System.Xml;
 using System.Xml.Serialization;
 using EpgMgr.Plugins;
 
@@ -76,11 +81,7 @@ namespace EpgMgr
 
             if (coreOnly) return;
             var plugins = PluginMgr.PluginNames;
-            /*if (m_config.EnabledPlugins == null || !plugins.Any())
-            {
-                var allPlugins = GetAllPlugins();
-                m_config.EnabledPlugins = allPlugins.ToList();
-            }*/
+
             PluginMgr.LoadPlugins(m_config.EnabledPlugins);
 
             // Now load plugin configs
@@ -95,6 +96,67 @@ namespace EpgMgr
                 var plugin = PluginMgr.LoadedPlugins.FirstOrDefault(row => row.PluginObj.Id.ToString().Equals(pluginId));
                 plugin?.PluginObj.LoadConfig(pluginElement);
             }
+        }
+
+        internal void LoadPluginConfig(Plugin plugin)
+        {
+            var configXml = new XmlDocument();
+            if (!File.Exists(CONFIG_FILE))
+                SaveConfig();
+            configXml.Load(CONFIG_FILE);
+
+            // Now load plugin configs
+            var pluginConfigs = (XmlElement)configXml.DocumentElement.GetElementsByTagName("PluginConfigs").Item(0);
+
+            if (pluginConfigs == null)
+                throw new Exception($"Configuration file {CONFIG_FILE} doesn't contain a plugin configuration section");
+
+            var pluginElement = (XmlElement)pluginConfigs.GetElementsByTagName(plugin.Id.ToString()).Item(0);
+            plugin.LoadConfig(pluginElement);
+        }
+
+        public void MakeXmlTV()
+        {
+            // If file exists open it. If not, make a new xmltv
+            XmlTV.XmlTV? xmltvFile = null;
+            if (File.Exists(Config.XmlTvConfig.Filename))
+            {
+                FeedbackMgr.UpdateStatus("Loading existing XMLTV file");
+                xmltvFile = XmlTV.XmlTV.Load(Config.XmlTvConfig.Filename);
+            }
+
+            if (xmltvFile == null)
+                xmltvFile = new XmlTV.XmlTV(DateTime.Today);
+
+            // Trim days out of date
+            var oldPrograms = xmltvFile.Programmes.Where(row =>
+                row.StartTime < DateTime.Today.AddDays(0 - Config.XmlTvConfig.MaxDaysBehind)).ToArray();
+            var newProgrammes = xmltvFile.Programmes.Where(row =>
+                row.StartTime > DateTime.Today.AddDays(Config.XmlTvConfig.MaxDaysAhead)).ToArray();
+
+            foreach (var programme in oldPrograms)
+                xmltvFile.DeleteProgramme(programme.StartTime, programme.Channel);
+            foreach (var programme in newProgrammes)
+                xmltvFile.DeleteProgramme(programme.StartTime, programme.Channel);
+
+            // Update channels from plugins
+            xmltvFile.Channels.Clear();
+            foreach (var plugin in PluginMgr.LoadedPlugins)
+            {
+                var channels = plugin.PluginObj.GetXmlTvChannels();
+                xmltvFile.Channels.AddRange(channels);
+            }
+
+            // Update links
+            xmltvFile.UpdateData();
+
+            // Update programs from plugins
+            foreach (var plugin in PluginMgr.LoadedPlugins)
+            {
+                plugin.PluginObj.GenerateXmlTv(ref xmltvFile);
+            }
+            FeedbackMgr.UpdateStatus("Saving XMLTV");
+            xmltvFile.Save(Config.XmlTvConfig.Filename);
         }
 
         public IEnumerable<PluginConfigEntry> GetAllPlugins() => PluginMgr.GetAllPlugins();

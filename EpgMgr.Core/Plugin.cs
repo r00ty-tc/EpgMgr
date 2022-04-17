@@ -18,25 +18,26 @@ namespace EpgMgr.Plugins
         public virtual string Author => string.Empty;
         protected ConfigEntry configRoot;
         protected List<Type> configTypes;
-        protected Core core;
+        protected Core m_core;
 
-        protected Plugin(Core core)
+        protected Plugin(Core mCore)
         {
-            this.core = core;
+            this.m_core = mCore;
             configRoot = new ConfigEntry(null, Id.ToString(), Name);
             configTypes = new List<Type>();
             configTypes.Add(typeof(System.String));
         }
 
-        public abstract Channel[] GetAllChannels();
-        public abstract PluginErrors GenerateXmlTv(ref XmlDocument doc);
+        public abstract EpgMgr.Channel[] GetXmlTvChannels();
+        public abstract PluginErrors GenerateXmlTv(ref XmlTV.XmlTV xmltv);
 
         /// <summary>
         /// Load configuration from XML to plugin storage
         /// </summary>
         /// <param name="pluginConfig"></param>
-        public virtual void LoadConfig(XmlElement pluginConfig)
+        public virtual void LoadConfig(XmlElement? pluginConfig)
         {
+            if (pluginConfig == null) return;
             // Default will be to just flat deserialize to XML
             // Anything more complex should just override this method
             using (XmlReader xmlReader = pluginConfig.CreateNavigator().ReadSubtree())
@@ -63,7 +64,6 @@ namespace EpgMgr.Plugins
             return doc.DocumentElement;
         }
 
-        public abstract string[] GetValidFolders(string context);
         public abstract void RegisterConfigData(FolderEntry folderEntry);
     }
 }
