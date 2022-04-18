@@ -116,8 +116,6 @@ namespace EpgMgr.Plugins
             var channels = configRoot.GetList<SkyChannel>("ChannelsAvailable");
             if (channels == null)
                 ConfigEntry.NewConfigList(configRoot, "ChannelsSubbed", null, new List<SkyChannels>());
-            if (allChannels == null || !allChannels.Any())
-                GetApiChannels();
 
             var regions = configRoot.GetList<SkyRegion>("SkyRegions");
             if (regions == null)
@@ -129,6 +127,8 @@ namespace EpgMgr.Plugins
             {
                 LoadBlobData();
             }
+            if (allChannels == null || !allChannels.Any())
+                GetApiChannels();
 
             if (configRoot.GetValue<string>("SkyRegion") == null)
                 ConfigEntry.NewConfigEntry<string>(configRoot, "SkyRegion", DEFAULT_REGION, "region");
@@ -166,7 +166,14 @@ namespace EpgMgr.Plugins
             if (regionId == null) regionId = DEFAULT_REGION;
             var region = configRoot.GetList<SkyRegion>("SkyRegions")?.FirstOrDefault(row => row.RegionId.Equals(regionId));
             if (region == null)
-                throw new DataException($"Unable to find region {regionId}");
+            {
+                LoadBlobData();
+                region = configRoot.GetList<SkyRegion>("SkyRegions")?.FirstOrDefault(row => row.RegionId.Equals(regionId));
+                if (region == null)
+                {
+                    throw new DataException($"Unable to find region {regionId}");
+                }
+            }
 
             var channels = m_web.GetJSON<SkyChannels>(API_CHANNEL_PREFIX + $"{region.Bouquet}/{region.SubBouquet}") ?? new SkyChannels();
             configRoot.SetList<SkyChannel>("ChannelsAvailable", channels.Channels.ToList());
