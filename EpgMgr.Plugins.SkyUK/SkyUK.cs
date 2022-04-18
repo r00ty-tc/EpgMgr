@@ -1,5 +1,9 @@
-﻿using System.Diagnostics;
+﻿using System.Data;
+using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using System.Xml;
 using EpgMgr.XmlTV;
 
@@ -12,6 +16,12 @@ namespace EpgMgr.Plugins
 
         internal const string LOGO_PREFIX =
             "https://d2n0069hmnqmmx.cloudfront.net/epgdata/1.0/newchanlogos/320/320/skychb";
+
+        // This might change often. Must watch.
+        internal const string BLOBDATAURI =
+            "https://www.sky.com/watch/assets/pages-app-tv-guide-index-js.81a2d554690a593fed3d.js";
+
+        internal const string DEFAULT_REGION = "4101-1";    // London HD
         public override Guid Id => Guid.Parse("17EC20A0-D302-4A42-BD10-23E5F08EDBAA");
         public override string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString();
         public override string Name => "Sky UK";
@@ -26,6 +36,8 @@ namespace EpgMgr.Plugins
             configTypes.Add(typeof(Channel));
             configTypes.Add(typeof(SkyChannel));
             configTypes.Add(typeof(CustomTag));
+            configTypes.Add(typeof(SkyRegion));
+            configTypes.Add(typeof(SkyServiceGenre));
             InitConfig();
         }
 
@@ -54,14 +66,40 @@ namespace EpgMgr.Plugins
             {
                 foreach (var schedule in epg.Schedules)
                 {
-                    foreach (var programme in schedule.Programmes)
+                    var channel = skyChannels.FirstOrDefault(row => row.Sid.Equals(schedule.Sid));
+                    if (channel == null)
                     {
-                        xmltv.DeleteOverlaps(programme.StartTime, programme.EndTime, schedule.Sid);
-                        var xmltvProgramme = xmltv.GetNewProgramme(programme.StartTime, schedule.Sid, programme.Title,
-                            programme.EndTime, null, programme.Synopsis, null, null, "en", null, "en");
-                        currentProgram++;
-                        if (currentProgram % 100 == 0 || currentProgram == totalPrograms)
-                            m_core.FeedbackMgr.UpdateStatus(null, currentProgram);
+                        errors.AddError($"Channel {schedule.Sid} was not found");
+                    }
+                    else
+                    {
+                        foreach (var programme in schedule.Programmes)
+                        {
+                            // Remove overlapping program(s)
+                            xmltv.DeleteOverlaps(programme.StartTime, programme.EndTime, m_core.GetAliasFromChannelName(channel.ChannelName));
+
+                            // Generate new XMLTV programme
+                            var xmltvProgramme = xmltv.GetNewProgramme(programme.StartTime, m_core.GetAliasFromChannelName(channel.ChannelName),
+                                programme.Title,
+                                programme.EndTime, null, programme.Synopsis, null, null, "en", null, "en");
+
+                            // Add episode info if present
+                            if (programme.SeasonNo > 0 && programme.EpisodeNo > 0)
+                                xmltvProgramme.AddEpisodeNum($"{programme.SeasonNo}{programme.EpisodeNo.ToString("D2")}");
+                            if (!string.IsNullOrWhiteSpace(programme.EpisodeId))
+                                xmltvProgramme.AddEpisodeNum(programme.EpisodeId, "dd_progid");
+
+                            // Add category if enabled and present and valid
+                            if (m_core.Config.XmlTvConfig.IncludeProgrammeCategories)
+                            {
+                                var genre = getGenre(programme.Eg);
+                                if (genre != null)
+                                    xmltvProgramme.AddCategory(genre);
+                            }
+                            currentProgram++;
+                            if (currentProgram % 100 == 0 || currentProgram == totalPrograms)
+                                m_core.FeedbackMgr.UpdateStatus(null, currentProgram);
+                        }
                     }
                 }
             }
@@ -72,15 +110,37 @@ namespace EpgMgr.Plugins
         public override void LoadConfig(XmlElement? pluginConfig)
         {
             base.LoadConfig(pluginConfig);
+            var allChannels = configRoot.GetList<SkyChannel>("ChannelsAvailable");
+            if (allChannels == null)
+                ConfigEntry.NewConfigList(configRoot, "ChannelsAvailable", null, new List<SkyChannels>());
             var channels = configRoot.GetList<SkyChannel>("ChannelsAvailable");
-            if (channels == null || !channels.Any())
+            if (channels == null)
+                ConfigEntry.NewConfigList(configRoot, "ChannelsSubbed", null, new List<SkyChannels>());
+            if (allChannels == null || !allChannels.Any())
                 GetApiChannels();
+
+            var regions = configRoot.GetList<SkyRegion>("SkyRegions");
+            if (regions == null)
+                ConfigEntry.NewConfigList(configRoot, "SkyRegions", "regions", new List<SkyRegion>());
+            var genres = configRoot.GetList<SkyServiceGenre>("SkyServiceGenres");
+            if (genres == null)
+                ConfigEntry.NewConfigList(configRoot, "SkyServiceGenres", "genres", new List<SkyServiceGenre>());
+            if (regions == null || !allChannels.Any() || genres == null || !genres.Any())
+            {
+                LoadBlobData();
+            }
+
+            if (configRoot.GetValue<string>("SkyRegion") == null)
+                ConfigEntry.NewConfigEntry<string>(configRoot, "SkyRegion", DEFAULT_REGION, "region");
         }
 
         private void InitConfig()
         {
             ConfigEntry.NewConfigList(configRoot, "ChannelsSubbed", null, new List<SkyChannels>());
             ConfigEntry.NewConfigList(configRoot, "ChannelsAvailable", null, new List<SkyChannels>());
+            ConfigEntry.NewConfigList(configRoot, "SkyRegions", "regions", new List<SkyRegion>());
+            ConfigEntry.NewConfigList(configRoot, "SkyServiceGenres", "genres", new List<SkyServiceGenre>());
+            ConfigEntry.NewConfigEntry<string>(configRoot, "SkyRegion", DEFAULT_REGION, "region");
         }
 
         public override EpgMgr.Channel[] GetXmlTvChannels()
@@ -89,7 +149,10 @@ namespace EpgMgr.Plugins
             if (skyChannels == null)
                 return new List<EpgMgr.Channel>().ToArray();
 
-            return skyChannels.Select(row => new EpgMgr.Channel(row.Sid, row.ChannelName, "en", row.LogoUrl)).ToArray();
+            return skyChannels.Select(row => new EpgMgr.Channel(m_core.GetAliasFromChannelName(row.ChannelName), m_core.GetAliasFromChannelName(row.ChannelName), "en", row.LogoUrl)
+            {
+                SkySID = row.Sid
+            }).ToArray();
         }
 
         public override void RegisterConfigData(FolderEntry folderEntry)
@@ -99,9 +162,13 @@ namespace EpgMgr.Plugins
 
         protected IEnumerable<SkyChannel> GetApiChannels()
         {
-            // @ToDO: Configurable region
-            var channels = m_web.GetJSON<SkyChannels>(API_CHANNEL_PREFIX + "4101/1") ??
-                           new SkyChannels();
+            var regionId = configRoot.GetValue<string>("SkyRegion");
+            if (regionId == null) regionId = DEFAULT_REGION;
+            var region = configRoot.GetList<SkyRegion>("SkyRegions")?.FirstOrDefault(row => row.RegionId.Equals(regionId));
+            if (region == null)
+                throw new DataException($"Unable to find region {regionId}");
+
+            var channels = m_web.GetJSON<SkyChannels>(API_CHANNEL_PREFIX + $"{region.Bouquet}/{region.SubBouquet}") ?? new SkyChannels();
             configRoot.SetList<SkyChannel>("ChannelsAvailable", channels.Channels.ToList());
             return channels.Channels;
         }
@@ -170,6 +237,51 @@ namespace EpgMgr.Plugins
             }
 
             return programmeList.ToArray();
+        }
+
+        private string? getGenre(int genreId)
+        {
+            var genres = configRoot.GetList<SkyServiceGenre>("SkyServiceGenres");
+            if (genres == null) return null;
+            return genres.FirstOrDefault(row => row.GenreId == genreId)?.GenreName;
+        }
+
+        public void LoadBlobData()
+        {
+            // Load blob data
+            var blobData = m_web.WebGet(BLOBDATAURI);
+
+            // Read regions
+            var regionRegex =
+                new Regex(
+                    "M.exports\\=(\\[{text\\:\\\".+?\\\"\\,bouquet\\:\\d+?\\,subBouquet\\:\\d+?,value\\:\\\".*?\\\"\\}\\])");
+            var regionDataString = regionRegex.Match(blobData);
+            if (regionDataString.Groups.Count > 1)
+            {
+                var resultString = regionDataString.Groups[1].Value;
+                resultString = resultString.Replace("text:", "\"text\":").Replace("bouquet:", "\"bouquet\":").Replace("subBouquet:", "\"subBouquet\":").Replace("value:", "\"value\":");
+                var regions = JsonSerializer.Deserialize<IEnumerable<SkyRegion>>(resultString);
+                if (regions != null && regions.Any())
+                {
+                    configRoot.SetList("SkyRegions", regions.ToList());
+                    m_core.FeedbackMgr.UpdateStatus($"Loaded {regions.Count()} regions");
+                }
+            }
+
+            // Read genres
+            var genreRegex = new Regex("serviceGenres:(\\[{text:\\\".+?\\\",value:\\d+\\}\\])");
+            var genreDataString = genreRegex.Match(blobData);
+            if (genreDataString.Groups.Count > 1)
+            {
+                var resultString = genreDataString.Groups[1].Value;
+                resultString = resultString.Replace("{text:\"HD Channels\",value:\"HD\"},", "").Replace("{text:\"All Channels\",value:0},", "").Replace("text:", "\"text\":").Replace("value:", "\"value\":");
+                var genres = JsonSerializer.Deserialize<IEnumerable<SkyServiceGenre>>(resultString);
+                if (genres != null && genres.Any())
+                {
+                    configRoot.SetList("SkyServiceGenres", genres.ToList());
+                    m_core.FeedbackMgr.UpdateStatus($"Loaded {genres.Count()} Service Genres");
+                }
+            }
         }
 
         internal static DateTimeOffset ConvertFromUnixTime(long timeStamp) => new DateTimeOffset(1970, 1, 1, 0, 0, 0, 0, new TimeSpan(0, 1, 0, 0)).AddSeconds(timeStamp);

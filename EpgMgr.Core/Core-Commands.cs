@@ -24,6 +24,7 @@ namespace EpgMgr
             mgr.RegisterCommand("save", CommandHandlerSAVE, "save: Saves the configuration to the Config.xml file");
             mgr.RegisterCommand("reload", CommandHandlerRELOAD, "reload: Reloads all plugins and configurations");
             mgr.RegisterCommand("run", CommandHandlerRUN, "run: Will run the XMLTV extract from all enabled plugins according to the current configuration");
+            mgr.RegisterCommand("alias", CommandHandlerALIAS, $"alias: set/remove/show channel aliases. Note there is no validation here{Environment.NewLine}Usage: alias set <channelname> <aliasname> / remove <channelname> / show <channelname>/ list");
             mgr.RegisterCommand("?", CommandHandlerHELP, $"?: Shows either the list of commands, or if a command is provided as an argument, the usage info for the command{Environment.NewLine}Usage: ? [command]");
             mgr.RegisterCommand("help", CommandHandlerHELP, $"help: Shows either the list of commands, or if a command is provided as an argument, the usage info for the command{Environment.NewLine}Usage: help [command]");
 
@@ -218,6 +219,60 @@ namespace EpgMgr
             core.MakeXmlTV();
             return
                 $"Generated XMLTV file {core.Config.XmlTvConfig.Filename} in {new TimeSpan(DateTime.UtcNow.Ticks - startTime).TotalMilliseconds}ms";
+        }
+
+        internal static string CommandHandlerALIAS(Core core, ref FolderEntry context, string command, string[] args)
+        {
+            if (args.Length < 1)
+                return $"{ConsoleControl.ErrorColour}Invalid Arguments. Check usage with help alias";
+
+            switch (args[0].ToLower())
+            {
+                case "set":
+                {
+                    if (args.Length != 3)
+                        return $"{ConsoleControl.ErrorColour}Invalid Arguments. Usage: alias set <channelname> <alias>";
+
+                    if (core.Config.ChannelNameToAlias.TryGetValue(args[1], out string? alias))
+                        return
+                            $"{ConsoleControl.ErrorColour}Channel alias for {args[1]} already set to {alias}. You must remove the old alias first";
+                    core.AddAlias(args[1], args[2]);
+                    return $"{ConsoleControl.SetFG(ConsoleColor.Green)}Added alias {args[2]} for Channel {args[1]}";
+                }
+                case "remove":
+                {
+                    if (args.Length != 2)
+                        return $"{ConsoleControl.ErrorColour}Invalid Arguments. Usage: alias remove <channelName>";
+                    if (!core.Config.ChannelNameToAlias.ContainsKey(args[1]))
+                        return
+                            $"{ConsoleControl.ErrorColour}Channel alias for {args[1]} doesn't exist. Nothing to remove";
+                    core.RemoveAlias(args[1]);
+                    return $"{ConsoleControl.SetFG(ConsoleColor.Green)}Removed alias for channel {args[1]}";
+                }
+                case "show":
+                {
+
+                    if (args.Length != 2)
+                        return $"{ConsoleControl.ErrorColour}Invalid Arguments. Usage: alias show <channelName>";
+                    if (!core.Config.ChannelNameToAlias.TryGetValue(args[1], out string? alias))
+                        return
+                            $"{ConsoleControl.ErrorColour}Channel alias for {args[1]} was not found, nothing to show";
+                    return $"Alias for channel {args[1]} is {alias}";
+                }
+                case "list":
+                {
+                    if (args.Length != 1)
+                        return $"{ConsoleControl.ErrorColour}Invalid Arguments. Usage: alias list";
+                    var result = "Channel Name              Alias" + Environment.NewLine;
+                    foreach (var alias in core.Config.ChannelNameToAlias)
+                        result += $"{alias.Key,-25} {alias.Value}{Environment.NewLine}";
+
+                    return result;
+                }
+                default:
+                    return $"{ConsoleControl.ErrorColour}Invalid sub-command {args[0]}";
+            }
+            return "";
         }
         internal static string CommandHandlerHELP(Core core, ref FolderEntry context, string command, string[] args)
         {

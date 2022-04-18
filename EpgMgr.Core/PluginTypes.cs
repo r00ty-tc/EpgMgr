@@ -319,7 +319,7 @@ namespace EpgMgr.Plugins
         public List<T>? GetList<T>(string key)
         {
             var objList = ConfigEntries?.FirstOrDefault(row => row.Key.Equals(key))?.ObjectList?.Cast<T>();
-            return (List<T>?)objList.ToList();
+            return (List<T>?)objList?.ToList();
         }
 
         /// <summary>

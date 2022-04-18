@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,12 +31,34 @@ namespace EpgMgr
         }
     }
 
+    public class ChannelAlias
+    {
+        [XmlAttribute(AttributeName = "channel-name")]
+        public string ChannelName { get; set; }
+        [XmlText]
+        public string Alias { get; set; }
+
+        public ChannelAlias(string channelName, string alias)
+        {
+            ChannelName = channelName;
+            Alias = alias;
+        }
+
+        public ChannelAlias() { }
+    }
+
     [XmlType]
     public class Config
     {
         public List<PluginConfigEntry> EnabledPlugins { get; set; }
         public string XmlTvFilename { get; set; }
         public ConfigXmlTv XmlTvConfig { get; set; }
+        [XmlIgnore]
+        public Dictionary<string, string> ChannelNameToAlias { get; set; }
+        [XmlIgnore]
+        public Dictionary<string, string> ChannelAliasToName { get; set; }
+
+        public List<ChannelAlias> ChannelAliases { get; set; }
 
         public Config()
         {
@@ -53,7 +76,22 @@ namespace EpgMgr
                 Filename = "Default-Guide.xml",
                 MaxDaysBehind = 1,
                 MaxDaysAhead = 5
-        };
+            };
+            ChannelNameToAlias = new Dictionary<string, string>();
+            ChannelAliasToName = new Dictionary<string, string>();
+
+        }
+
+        public void PostLoadConfig()
+        {
+            ChannelNameToAlias = ChannelAliases.ToDictionary(row => row.ChannelName, row => row.Alias);
+            ChannelAliasToName = ChannelAliases.ToDictionary(row => row.Alias, row => row.ChannelName);
+        }
+
+        public void PreSaveConfig()
+        {
+            // So dumb that I can't do this as a property setter
+            ChannelAliases = ChannelNameToAlias.Select(row => new ChannelAlias(row.Key, row.Value)).ToList();
         }
     }
 

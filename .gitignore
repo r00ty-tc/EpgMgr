@@ -10,3 +10,4 @@ bin
 /buildlinuxarm.bat
 /buildlinuxarm64.bat
 /buildwin64.bat
+/*.7z

@@ -141,6 +141,7 @@ namespace EpgMgr
 
         public static string SetFG(ConsoleColor colour) => EscapePattern + SetFGColourString + ((int)colour).ToString() + EscapePattern;
         public static string SetBG(ConsoleColor colour) => EscapePattern + SetBGColourString + ((int)colour).ToString() + EscapePattern;
+        public static string ErrorColour => SetFG(ConsoleColor.Red);
 
         public static void Write(string text)
         {

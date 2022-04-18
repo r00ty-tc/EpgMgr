@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Globalization;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
@@ -35,6 +36,7 @@ namespace EpgMgr
 
         public long SaveConfig()
         {
+            Config.PreSaveConfig();
             // Main config save
             var configXml = new XmlDocument();
             var declaration = configXml.CreateXmlDeclaration("1.0", "UTF-8", null);
@@ -96,6 +98,7 @@ namespace EpgMgr
                 var plugin = PluginMgr.LoadedPlugins.FirstOrDefault(row => row.PluginObj.Id.ToString().Equals(pluginId));
                 plugin?.PluginObj.LoadConfig(pluginElement);
             }
+            Config.PostLoadConfig();
         }
 
         internal void LoadPluginConfig(Plugin plugin)
@@ -157,6 +160,39 @@ namespace EpgMgr
             }
             FeedbackMgr.UpdateStatus("Saving XMLTV");
             xmltvFile.Save(Config.XmlTvConfig.Filename);
+        }
+
+        public void AddAlias(string channelName, string alias)
+        {
+            if (Config.ChannelNameToAlias.ContainsKey(channelName)) return;
+            Config.ChannelNameToAlias.Add(channelName, alias);
+            Config.ChannelAliasToName.Add(alias, channelName);
+        }
+
+        public void RemoveAlias(string channelName)
+        {
+            if (Config.ChannelNameToAlias.TryGetValue(channelName, out string alias))
+            {
+                Config.ChannelAliasToName.Remove(alias);
+                Config.ChannelNameToAlias.Remove(channelName);
+            }
+        }
+
+        public string? GetChannelNameFromAlias(string alias, bool nullIfNotFound = false)
+        {
+            if (Config.ChannelAliasToName.TryGetValue(alias, out var channelName))
+                return channelName;
+
+            return nullIfNotFound ? null : alias;
+        }
+
+        public string? GetAliasFromChannelName(string channelName, bool nullIfNotFound = false)
+        {
+            if (Config.ChannelNameToAlias.TryGetValue(channelName, out var alias))
+                return alias;
+
+            return nullIfNotFound ? null : channelName;
+
         }
 
         public IEnumerable<PluginConfigEntry> GetAllPlugins() => PluginMgr.GetAllPlugins();

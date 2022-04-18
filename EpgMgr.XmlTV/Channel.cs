@@ -24,6 +24,38 @@ namespace EpgMgr
         [XmlIgnore]
         public Dictionary<DateTimeOffset, Programme> Programmes { get; set; }
 
+        // Custom attributes/elements. Plugins that need extra attribs will need to either add here or use the generic ones provided
+        [XmlAttribute(AttributeName = "sky-sid")]
+        public string? SkySID;
+
+        // Generic Attributes for use by plugins
+        [XmlAttribute(AttributeName = "plugin-customattr-A")]
+        public string? PluginCustomAttrA;
+        [XmlAttribute(AttributeName = "plugin-customattr-B")]
+        public string? PluginCustomAttrB;
+        [XmlAttribute(AttributeName = "plugin-customattr-C")]
+        public string? PluginCustomAttrC;
+        [XmlAttribute(AttributeName = "plugin-customattr-D")]
+        public string? PluginCustomAttrD;
+        [XmlAttribute(AttributeName = "plugin-customattr-E")]
+        public string? PluginCustomAttrE;
+        [XmlAttribute(AttributeName = "plugin-customattr-F")]
+        public string? PluginCustomAttrF;
+
+        // Generic Elements for use by plugins
+        [XmlElement(ElementName = "PluginCustomElementA")]
+        public string? PluginCustomElementA;
+        [XmlElement(ElementName = "PluginCustomElementB")]
+        public string? PluginCustomElementB;
+        [XmlElement(ElementName = "PluginCustomElementC")]
+        public string? PluginCustomElementC;
+        [XmlElement(ElementName = "PluginCustomElementD")]
+        public string? PluginCustomElementD;
+        [XmlElement(ElementName = "PluginCustomElementE")]
+        public string? PluginCustomElementE;
+        [XmlElement(ElementName = "PluginCustomElementF")]
+        public string? PluginCustomElementF;
+
         public Channel(string id, string? displayName = null, string? lang = null, string? iconSource = null, int? iconWidth = null, int? iconHeight = null, string? url = null, string? urlSystem = null)
         {
             Id = id;
@@ -37,6 +69,19 @@ namespace EpgMgr
             if (url != null)
                 Urls.Add(new XmlTvUrl(url, urlSystem));
 
+            SkySID = null;
+            PluginCustomAttrA = null;
+            PluginCustomAttrB = null;
+            PluginCustomAttrC = null;
+            PluginCustomAttrD = null;
+            PluginCustomAttrE = null;
+            PluginCustomAttrF = null;
+            PluginCustomElementA = null;
+            PluginCustomElementB = null;
+            PluginCustomElementC = null;
+            PluginCustomElementD = null;
+            PluginCustomElementE = null;
+            PluginCustomElementF = null;
             Programmes = new Dictionary<DateTimeOffset, Programme>();
         }
 

@@ -9,6 +9,29 @@ using System.Xml.Serialization;
 
 namespace EpgMgr.Plugins
 {
+    [XmlType]
+    public class SkyRegion
+    {
+        [JsonPropertyName("text"),XmlText] 
+        public string RegionName { get; set; }
+        [JsonPropertyName("bouquet"), XmlAttribute(AttributeName = "bouquet")]
+        public int Bouquet { get; set; }
+        [JsonPropertyName("subBouquet"), XmlAttribute(AttributeName = "sub-bouquet")]
+        public int SubBouquet { get; set; }
+        [JsonPropertyName("value"), XmlAttribute(AttributeName = "region-id")]
+        public string RegionId { get; set; }
+    }
+
+    [XmlType]
+    public class SkyServiceGenre
+    {
+        [JsonPropertyName("text"), XmlText] 
+        public string GenreName { get; set; }
+
+        [JsonPropertyName("value"), XmlAttribute(AttributeName = "genre-id")]
+        public int GenreId { get; set; }
+    }
+
     public class SkyChannels
     {
         [JsonPropertyName("services")]
