@@ -87,7 +87,7 @@ namespace EpgMgr.Plugins
                             if (programme.SeasonNo > 0 && programme.EpisodeNo > 0)
                                 xmltvProgramme.AddEpisodeNum($"{programme.SeasonNo}{programme.EpisodeNo.ToString("D2")}");
                             if (!string.IsNullOrWhiteSpace(programme.EpisodeId))
-                                xmltvProgramme.AddEpisodeNum(programme.EpisodeId, "dd_progid");
+                                xmltvProgramme.AddEpisodeNum(programme.EpisodeId, "skyuk_epid");
 
                             // Add category if enabled and present and valid
                             if (m_core.Config.XmlTvConfig.IncludeProgrammeCategories)
@@ -110,6 +110,8 @@ namespace EpgMgr.Plugins
         public override void LoadConfig(XmlElement? pluginConfig)
         {
             base.LoadConfig(pluginConfig);
+
+            // If structures aren't setup, add them. This protects against old configs without them being loaded
             var allChannels = configRoot.GetList<SkyChannel>("ChannelsAvailable");
             if (allChannels == null)
                 ConfigEntry.NewConfigList(configRoot, "ChannelsAvailable", null, new List<SkyChannels>());
@@ -123,13 +125,18 @@ namespace EpgMgr.Plugins
             var genres = configRoot.GetList<SkyServiceGenre>("SkyServiceGenres");
             if (genres == null)
                 ConfigEntry.NewConfigList(configRoot, "SkyServiceGenres", "genres", new List<SkyServiceGenre>());
+
+            // If either regions or genres aren't found, fetch them from API
             if (regions == null || !allChannels.Any() || genres == null || !genres.Any())
             {
                 LoadBlobData();
             }
+
+            // If channels aren't loaded, get them from API
             if (allChannels == null || !allChannels.Any())
                 GetApiChannels();
 
+            // If region not found, set default
             if (configRoot.GetValue<string>("SkyRegion") == null)
                 ConfigEntry.NewConfigEntry<string>(configRoot, "SkyRegion", DEFAULT_REGION, "region");
         }
