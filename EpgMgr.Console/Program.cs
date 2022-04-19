@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using System.Net.WebSockets;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -44,10 +45,81 @@ var core = new Core(UpdateFeedback);
 
 var context = core.CommandMgr.RootFolder;
 ConsoleControl.WriteLine($"EpgMgr Console {Assembly.GetExecutingAssembly().GetName().Version}");
-ShowPrompt(context);
-while (true)
+bool useConsole = true;
+if (args.Length != 0)
 {
-    ProcessCommand();
+    useConsole = ProcessArgs(args.ToList());
+}
+
+if (useConsole)
+{
+    ShowPrompt(context);
+    while (true)
+    {
+        ProcessCommand();
+    }
+}
+
+System.Environment.Exit(0);
+
+bool ProcessArgs(List<string> args)
+{
+    var useConsole = true;
+    var willRun = false;
+    // Currently just looking for -run or -file
+    while (args.Count > 0)
+    {
+        var arg = TakeArg(args);
+        switch (arg.ToLower())
+        {
+            case "-file":
+            {
+                var file = TakeArg(args);
+                if (file == null)
+                {
+                    ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Invalid parameter. -file requires filename parameter");
+                    Environment.Exit(1);
+                }
+
+                if (!new FileInfo(file).Directory.Exists)
+                {
+                    ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Folder for {file} doesn't exist");
+                    Environment.Exit(1);
+                }
+
+                core.Config.XmlTvConfig.Filename = file;
+                break;
+            }
+            case "-run":
+            {
+                useConsole = false;
+                willRun = true;
+                break;
+            }
+            case "-help":
+            case "-?":
+                ConsoleControl.WriteLine("Usage: Console [-file <filename>] [-run]. No arguments will start the console -file will set the xmltv filename to use and -run will bypass console and create an xmltv file");
+                Environment.Exit(0);
+                break;
+            default:
+                ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Invalid argument {arg}");
+                Environment.Exit(1);
+                break;
+        }
+    }
+
+    if (willRun)
+        core.MakeXmlTV();
+    return false;
+}
+
+static string? TakeArg(List<string> args)
+{
+    var arg = args.FirstOrDefault();
+    if (arg == null)
+        return null;
+    args.RemoveAt(0);
+    return arg;
 }
 
 void ProcessCommand()
