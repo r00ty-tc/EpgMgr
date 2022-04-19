@@ -15,39 +15,26 @@ namespace EpgMgr.Plugins
             // Custom global commands
 
             // Custom local commands
-            m_core.CommandMgr.RegisterCommand("skytest", CommandHandlerSKYTEST, $"List sky channels using API", this,
-                folderEntry);
-            m_core.CommandMgr.RegisterCommand("reloadchannels", CommandHandlerRELOADCHANNELS, $"Reload channels from API",
-                this, folderEntry);
+            m_core.CommandMgr.RegisterCommand("refresh", CommandHandlerREFRESH, $"Reload channels or static data from API{Environment.NewLine}Usage refresh channels / refresh data",
+                this, folderEntry, 1);
             m_core.CommandMgr.RegisterCommand("channel", CommandHandlerCHANNEL, $"channel: Channel operations. add/remove/adjust alias for channel(s){Environment.NewLine}" +
                 $"Usage: channel add <channel/range> / remove <channel/range> / list [all] / alias set <channelNo> <newName> / alias remove <channelNo> / alias list", this, folderEntry);
             m_core.CommandMgr.RegisterCommand("region", CommandHandlerREGION, $"region: Region operations. list/show/set region for API operations{Environment.NewLine}Usage: region list / show / set <regionid>", this, folderEntry);
         }
 
-
-        public string CommandHandlerSKYTEST(Core core, ref FolderEntry context, string command, string[] args)
+        public string CommandHandlerREFRESH(Core core, ref FolderEntry context, string command, string[] args)
         {
-            List<SkyChannel> toProcess = new List<SkyChannel>();
-            var existingChannels = configRoot.GetList<SkyChannel>("ChannelsSubbed") ?? new List<SkyChannel>();
-            var programmeList = new List<SkyEpgList>();
-            foreach (var channel in existingChannels)
+            switch (args[0].ToLower())
             {
-                toProcess.Add(channel);
-                if (toProcess.Count == 20)
-                {
-                    programmeList.Add(GetProgrammes(toProcess.ToArray()));
-                    toProcess.Clear();
-                }
+                case "channels":
+                    var channels = GetApiChannels();
+                    return $"Refreshed {channels.Count()} channels from API";
+                case "data":
+                    LoadBlobData();
+                    return "Reloaded static data";
+                default:
+                    return "Invalid argument. Try reload channels or reload data";
             }
-            if (toProcess.Count > 0)
-                programmeList.Add(GetProgrammes(toProcess.ToArray()));
-            return "";
-        }
-
-        public string CommandHandlerRELOADCHANNELS(Core core, ref FolderEntry context, string command, string[] args)
-        {
-            var channels = GetApiChannels();
-            return $"Refreshed {channels.Count()} channels from API";
         }
 
         public string CommandHandlerREGION(Core core, ref FolderEntry context, string command, string[] args)
