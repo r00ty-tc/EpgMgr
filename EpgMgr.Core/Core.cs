@@ -1,10 +1,4 @@
-﻿using System.Globalization;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
-using System.Text;
-using System.Xml;
+﻿using System.Xml;
 using System.Xml.Serialization;
 using EpgMgr.Plugins;
 

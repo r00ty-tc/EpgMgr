@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Serialization;
+﻿using System.Xml.Serialization;
 
 namespace EpgMgr
 {
@@ -51,7 +45,6 @@ namespace EpgMgr
     public class Config
     {
         public List<PluginConfigEntry> EnabledPlugins { get; set; }
-        public string XmlTvFilename { get; set; }
         public ConfigXmlTv XmlTvConfig { get; set; }
         [XmlIgnore]
         public Dictionary<string, string> ChannelNameToAlias { get; set; }
@@ -65,7 +58,6 @@ namespace EpgMgr
             EnabledPlugins = new List<PluginConfigEntry>();
             XmlTvConfig = new ConfigXmlTv
             {
-                DateMode = 0,
                 IncldeProgrammeStarRatings = true,
                 IncludeProgrammeCategories = true,
                 IncludeProgrammeCredits = true,
@@ -100,8 +92,6 @@ namespace EpgMgr
     {
         [XmlElement]
         public string Filename { get; set; }
-        [XmlAttribute(AttributeName = "datemode")]
-        public int DateMode { get; set; } // 0 = Offset, 1 = UTC
         [XmlAttribute]
         public bool IncludeProgrammeCredits { get; set; }
         [XmlAttribute]

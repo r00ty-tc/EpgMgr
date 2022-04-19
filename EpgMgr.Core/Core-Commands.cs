@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Data;
-using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Threading.Tasks;
-using EpgMgr.Plugins;
+﻿using EpgMgr.Plugins;
 
 namespace EpgMgr
 {
@@ -36,7 +28,6 @@ namespace EpgMgr
 
             // xmltv config
             var xmlTvContext = mgr.RootFolder.FindEntryByPath("config/core/xmltv");
-            mgr.RegisterCommand("datemode", CommandHandlerXmlTvDATEMODE, $"Sets the XMLTV Programme date/time mode between UTC or including offset. Default is offset{Environment.NewLine}Usage: datemode [utc] [offset]", null, xmlTvContext, 1);
         }
 
         private static string CommandHandlerConfigPLUGIN(Core core, ref FolderEntry context, string command, string[] args)
@@ -95,21 +86,6 @@ namespace EpgMgr
             }
 
             return "";
-        }
-
-        private static string CommandHandlerXmlTvDATEMODE(Core core, ref FolderEntry context, string command, string[] args)
-        {
-            if (args[0].Equals("utc", StringComparison.InvariantCultureIgnoreCase))
-            {
-                core.Config.XmlTvConfig.DateMode = 1;
-                return "XMLTV Program Date mode set to UTC";
-            }
-            if (args[0].Equals("offset"))
-            {
-                core.Config.XmlTvConfig.DateMode = 0;
-                return "XMLTV Program Date mode set to Offset";
-            }
-            return $"Invalid value {args[0]}";
         }
 
         internal static string CommandHandlerCD(Core core, ref FolderEntry context, string command, string[] args)
@@ -281,7 +257,19 @@ namespace EpgMgr
                 return "No commands available.";
 
             if (args.Length == 0)
-                return $"Available commands:{Environment.NewLine}{ConsoleControl.SetFG(ConsoleColor.Green)}{string.Join(Environment.NewLine, cmds.Select(row => row.CommandString))}";
+            {
+                var globalCmds = string.Join(Environment.NewLine,
+                    cmds.Where(row => row.Context == null).Select(row => row.CommandString));
+                var localCmds = string.Join(Environment.NewLine,
+                    cmds.Where(row => row.Context != null).Select(row => row.CommandString));
+
+                // If both lists have entries put a new line after global commands.
+                if (globalCmds.Length > 0 && localCmds.Length > 0)
+                    globalCmds += Environment.NewLine;
+
+                return
+                    $"Available commands:{Environment.NewLine}{ConsoleControl.SetFG(ConsoleColor.Green)}{globalCmds}{ConsoleControl.SetFG(ConsoleColor.DarkCyan)}{localCmds}";
+            }
 
             if (args.Length != 1)
             {

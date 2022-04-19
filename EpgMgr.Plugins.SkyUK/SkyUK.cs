@@ -1,11 +1,8 @@
 ﻿using System.Data;
-using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml;
-using EpgMgr.XmlTV;
 
 namespace EpgMgr.Plugins
 {
@@ -147,7 +144,7 @@ namespace EpgMgr.Plugins
             ConfigEntry.NewConfigList(configRoot, "ChannelsAvailable", null, new List<SkyChannels>());
             ConfigEntry.NewConfigList(configRoot, "SkyRegions", "regions", new List<SkyRegion>());
             ConfigEntry.NewConfigList(configRoot, "SkyServiceGenres", "genres", new List<SkyServiceGenre>());
-            ConfigEntry.NewConfigEntry<string>(configRoot, "SkyRegion", DEFAULT_REGION, "region");
+            ConfigEntry.NewConfigEntry<string>(configRoot, "SkyRegion", DEFAULT_REGION, "Region");
         }
 
         public override EpgMgr.Channel[] GetXmlTvChannels()
@@ -164,6 +161,7 @@ namespace EpgMgr.Plugins
 
         public override void RegisterConfigData(FolderEntry folderEntry)
         {
+            folderEntry.AddChildValue("SkyRegion", setGetConfigValue, ValueType.ConfigValueType_String);
             RegisterCommands(folderEntry);
         }
 

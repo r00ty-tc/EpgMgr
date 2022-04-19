@@ -1,11 +1,8 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using System.Net.WebSockets;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using EpgMgr;
-using EpgMgr.Plugins;
 using Console = System.Console;
 
 [DllImport("mscoree.dll", CharSet = CharSet.Unicode)]

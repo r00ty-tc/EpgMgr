@@ -1,13 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using EpgMgr.Plugins;
+﻿using EpgMgr.Plugins;
 
 namespace EpgMgr
 {
@@ -43,7 +34,6 @@ namespace EpgMgr
             CoreCommands.RegisterCommands(this, RootFolder);
 
             // Register variables
-            coreXmlTvFolder.AddChildValue("DateMode", SetgetXmlTvValue, ValueType.ConfigValueType_String);
             coreXmlTvFolder.AddChildValue("IncludeProgrammeCredits", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
             coreXmlTvFolder.AddChildValue("IncludeProgrammeCategories", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
             coreXmlTvFolder.AddChildValue("IncludeProgrammeIcons", SetgetXmlTvValue, ValueType.ConfigValueType_Bool);
@@ -218,21 +208,6 @@ namespace EpgMgr
             {
                 switch (valuename.ToLower())
                 {
-                    case "datemode":
-                        if (value == null)
-                        {
-                            value = (int)m_core.Config.XmlTvConfig.DateMode == 0 ? "offset" :
-                                m_core.Config.XmlTvConfig.DateMode == 1 ? "utc" : null;
-                        }
-                        else
-                        {
-                            if (((string)value).Equals("offset", StringComparison.InvariantCultureIgnoreCase))
-                                m_core.Config.XmlTvConfig.DateMode = 0;
-                            if (((string)value).Equals("utc", StringComparison.InvariantCultureIgnoreCase))
-                                m_core.Config.XmlTvConfig.DateMode = 1;
-                        }
-
-                        return;
                     case "includeprogrammecredits":
                         if (value == null)
                             value = m_core.Config.XmlTvConfig.IncludeProgrammeCredits;
