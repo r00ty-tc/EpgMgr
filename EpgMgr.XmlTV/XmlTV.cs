@@ -50,7 +50,13 @@ namespace EpgMgr.XmlTV
             Date = date;
         }
 
-        public XmlTV() { }
+        public XmlTV()
+        {
+            Channels = new List<Channel>();
+            Programmes = new List<Programme>();
+            channelLookup = new Dictionary<string, Channel>();
+            programmeLookup = new Dictionary<Tuple<string, string>, Programme>();
+        }
 
         public void UpdateData()
         {
@@ -58,7 +64,7 @@ namespace EpgMgr.XmlTV
             channelLookup = new Dictionary<string, Channel>(Channels.Select(row => new KeyValuePair<string, Channel>(row.Id, row)));
             programmeLookup = new Dictionary<Tuple<string, string>, Programme>(Programmes.Select(row =>
                 new KeyValuePair<Tuple<string, string>, Programme>(
-                    new Tuple<string, string>(row.Channel, row.StartTimeXml), row)));
+                    new Tuple<string, string>(row.Channel, ParseDateTime(row.StartTime)), row)));
 
             // Update links programme -> channel
             Programmes.ForEach(row => row.ChannelRef = GetChannel(row.Channel));
@@ -138,12 +144,15 @@ namespace EpgMgr.XmlTV
             var declaration = xmltvXml.CreateXmlDeclaration("1.0", "ISO-8859-1", null);
             var rootNode = xmltvXml.DocumentElement;
             xmltvXml.InsertBefore(declaration, rootNode);
-            using (var xmlWriter = xmltvXml.CreateNavigator().AppendChild())
+            using (var xmlWriter = xmltvXml.CreateNavigator()?.AppendChild())
             {
-                var serializer = new XmlSerializer(typeof(XmlTV));
-                var ns = new XmlSerializerNamespaces();
-                ns.Add("", "");
-                serializer.Serialize(xmlWriter, this, ns);
+                if (xmlWriter != null)
+                {
+                    var serializer = new XmlSerializer(typeof(XmlTV));
+                    var ns = new XmlSerializerNamespaces();
+                    ns.Add("", "");
+                    serializer.Serialize(xmlWriter, this, ns);
+                }
             }
             xmltvXml.Save(filename);
         }
@@ -152,6 +161,7 @@ namespace EpgMgr.XmlTV
         {
             var tvXml = new XmlDocument();
             tvXml.Load(filename);
+            if (tvXml.DocumentElement == null) return null;
 
             // Main config load
             var serializer = new XmlSerializer(typeof(XmlTV));

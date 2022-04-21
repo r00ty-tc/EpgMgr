@@ -7,6 +7,14 @@ namespace EpgMgr.Plugins
     [XmlType]
     public class SkyRegion
     {
+        public SkyRegion()
+        {
+            RegionName = string.Empty;
+            Bouquet = 0;
+            SubBouquet = 0;
+            RegionId = string.Empty;
+        }
+
         [JsonPropertyName("text"),XmlText] 
         public string RegionName { get; set; }
         [JsonPropertyName("bouquet"), XmlAttribute(AttributeName = "bouquet")]
@@ -25,12 +33,17 @@ namespace EpgMgr.Plugins
 
         [JsonPropertyName("value"), XmlAttribute(AttributeName = "genre-id")]
         public int GenreId { get; set; }
+        public SkyServiceGenre()
+        {
+            GenreName = string.Empty;
+            GenreId = 0;
+        }
     }
 
     public class SkyChannels
     {
         [JsonPropertyName("services")]
-        public SkyChannel[] Channels { get; set; }
+        public SkyChannel[]? Channels { get; set; }
     }
     [XmlType]
     public class SkyChannel
@@ -48,7 +61,7 @@ namespace EpgMgr.Plugins
         [JsonPropertyName("sf"), XmlAttribute(AttributeName = "type")]
         public string Sf { get; set; }
         [JsonPropertyName("adult"), XmlAttribute(AttributeName = "adult")]
-        public bool IsAdsult { get; set; }
+        public bool IsAdult { get; set; }
         [JsonPropertyName("local"), XmlAttribute(AttributeName = "local")]
         public bool IsLocal { get; set; }
         [JsonPropertyName("avail"), XmlElement(ElementName = "Availability")]
@@ -56,6 +69,18 @@ namespace EpgMgr.Plugins
 
         [JsonIgnore, XmlIgnore] 
         public string LogoUrl => $"{SkyUK.LOGO_PREFIX}{Sid}.png";
+        public SkyChannel()
+        {
+            Sid = string.Empty;
+            ChannelNo = string.Empty;
+            ChannelName = string.Empty;
+            Sg = 0;
+            Xsg = 0;
+            Sf = string.Empty;
+            IsAdult = false;
+            IsLocal = false;
+            Availability = Array.Empty<string>();
+        }
     }
 
     public class SkyEpgList
@@ -71,6 +96,12 @@ namespace EpgMgr.Plugins
 
         [JsonPropertyName("schedule")]
         public SkySchedule[] Schedules { get; set; }
+
+        public SkyEpgList()
+        {
+            DateJson = string.Empty;
+            Schedules = Array.Empty<SkySchedule>();
+        }
     }
 
     public class SkySchedule
@@ -79,72 +110,78 @@ namespace EpgMgr.Plugins
         public string Sid { get; set; }
         [JsonPropertyName("events")]
         public SkyProgram[] Programmes { get; set; }
+
+        public SkySchedule()
+        {
+            Sid = string.Empty;
+            Programmes = Array.Empty<SkyProgram>();
+        }
     }
 
     public class SkyProgram
     {
         [JsonPropertyName("st")]
-        public long start { get; set; }
+        public long? start { get; set; }
         [JsonIgnore]
-        public DateTimeOffset StartTime => SkyUK.ConvertFromUnixTime(start);
+        public DateTimeOffset? StartTime => SkyUK.ConvertFromUnixTime(start ?? 0);
         [JsonPropertyName("d")]
-        public long duration { get; set; }
+        public long? duration { get; set; }
         [JsonIgnore]
-        public DateTimeOffset EndTime => SkyUK.ConvertFromUnixTime(start + duration);
+        public DateTimeOffset? EndTime => SkyUK.ConvertFromUnixTime((start ?? 0) + (duration ?? 0));
 
         [JsonPropertyName("eid")]
-        public string EpisodeId { get; set; }
+        public string? EpisodeId { get; set; }
         [JsonPropertyName("cgid")]
-        public int CategoryId { get; set; }
+        public int? CategoryId { get; set; }
         [JsonPropertyName("programmeuuid")]
-        public string ProgrammeUUID { get; set; }
+        public string? ProgrammeUUID { get; set; }
         [JsonPropertyName("seasonnumber")]
-        public int SeasonNo { get; set; }
+        public int? SeasonNo { get; set; }
         [JsonPropertyName("episodenumber")]
-        public int EpisodeNo { get; set; }
+        public int? EpisodeNo { get; set; }
         [JsonPropertyName("seasonuuid")]
-        public string SeasonUUID { get; set; }
+        public string? SeasonUUID { get; set; }
         [JsonPropertyName("seriesuuid")]
-        public string SeriesUUID { get; set; }
+        public string? SeriesUUID { get; set; }
         [JsonPropertyName("haschildren")]
-        public bool HasChildren { get; set; }
+        public bool? HasChildren { get; set; }
         [JsonPropertyName("t")]
-        public string Title { get; set; }
+        public string? Title { get; set; }
         [JsonPropertyName("sy")]
-        public string Synopsis { get; set; }
+        public string? Synopsis { get; set; }
         [JsonPropertyName("eg")]
-        public int Eg { get; set; }
+        public int? Eg { get; set; }
         [JsonPropertyName("esg")]
-        public int Esg { get; set; }
+        public int? Esg { get; set; }
         [JsonPropertyName("tso")]
-        public int Tso { get; set; }
+        public int? Tso { get; set; }
         [JsonPropertyName("r")]
-        public string Rating { get; set; }
+        public string? Rating { get; set; }
         [JsonPropertyName("at")]
-        public string At { get; set; }
+        public string? At { get; set; }
         [JsonPropertyName("s")]
-        public bool S { get; set; }
+        public bool? S { get; set; }
         [JsonPropertyName("ad`")]
-        public bool HasAudioDescription { get; set; }
+        public bool? HasAudioDescription { get; set; }
         [JsonPropertyName("hd")]
-        public bool IsHD { get; set; }
+        public bool? IsHD { get; set; }
         [JsonPropertyName("new")]
-        public bool IsNew { get; set; }
+        public bool? IsNew { get; set; }
         [JsonPropertyName("canl")]
-        public bool CanL { get; set; }
+        public bool? CanL { get; set; }
         [JsonPropertyName("canb")]
-        public bool CanB { get; set; }
+        public bool? CanB { get; set; }
         [JsonPropertyName("hasAlternativeAudio")]
-        public bool HasAlternativeAudio { get; set; }
+        public bool? HasAlternativeAudio { get; set; }
         [JsonPropertyName("restartable")]
-        public bool IsRestartable { get; set; }
+        public bool? IsRestartable { get; set; }
         [JsonPropertyName("slo")]
-        public bool Slo { get; set; }
+        public bool? Slo { get; set; }
         [JsonPropertyName("w")]
-        public bool W { get; set; }
+        public bool? W { get; set; }
         [JsonPropertyName("ippv")]
-        public bool Ippv { get; set; }
+        public bool? Ippv { get; set; }
         [JsonPropertyName("oppv")]
-        public bool Oppv { get; set; }
+        public bool? Oppv { get; set; }
     }
 }

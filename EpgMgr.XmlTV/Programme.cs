@@ -33,24 +33,24 @@ namespace EpgMgr.XmlTV
         [XmlElement(ElementName = "title")]
         public List<TextWithLang> Titles { get; set; }
         [XmlElement(ElementName = "sub-title")]
-        public List<TextWithLang> Subtitles { get; set; }
+        public List<TextWithLang>? Subtitles { get; set; }
         [XmlElement(ElementName = "desc")]
-        public List<TextWithLang> Descriptions { get; set; }
+        public List<TextWithLang>? Descriptions { get; set; }
         [XmlElement(ElementName = "credits")]
         public Credits? Credits { get; set; }
         [XmlElement(ElementName = "date")]
         public string? DateXml { get; set; }
         [XmlElement(ElementName = "category")]
-        public List<TextWithLang> Categories { get; set; }
+        public List<TextWithLang>? Categories { get; set; }
         [XmlElement(ElementName = "keyword")]
-        public List<TextWithLang> Keywords { get; set; }
+        public List<TextWithLang>? Keywords { get; set; }
         [XmlElement(ElementName = "language")]
         public TextWithLang? Language { get; set; }
         [XmlElement(ElementName = "orig-language")]
         public TextWithLang? OrigLanguage { get; set; }
 
         [XmlElement(ElementName = "length")]
-        public Length LengthValue { get; set; }
+        public Length? LengthValue { get; set; }
         [XmlElement(ElementName = "icon")]
         public List<Icon>? Icons { get; set; }
         [XmlElement(ElementName = "url")]
@@ -64,23 +64,23 @@ namespace EpgMgr.XmlTV
         [XmlElement(ElementName = "audio")]
         public Audio? Audio { get; set; }
         [XmlElement(ElementName = "previously-shown")]
-        public PreviouslyShown PreviouslyShown { get; set; }
+        public PreviouslyShown? PreviouslyShown { get; set; }
         [XmlElement(ElementName = "premiere")]
-        public TextWithLang Premiere { get; set; }
+        public TextWithLang? Premiere { get; set; }
         [XmlElement(ElementName = "last-chance")]
-        public TextWithLang LastChance { get; set; }
+        public TextWithLang? LastChance { get; set; }
         [XmlElement(ElementName = "new")]
-        public EmptyElement New { get; set; }
+        public EmptyElement? New { get; set; }
         [XmlElement(ElementName = "subtitles")]
-        public List<SubtitleInfo> TxtSubtitles { get; set; }
+        public List<SubtitleInfo>? TxtSubtitles { get; set; }
         [XmlElement(ElementName = "rating")]
-        public List<ValueIcon> Ratings { get; set; }
+        public List<ValueIcon>? Ratings { get; set; }
         [XmlElement(ElementName = "star-rating")]
-        public List<ValueIcon> StarRatings { get; set; }
+        public List<ValueIcon>? StarRatings { get; set; }
         [XmlElement(ElementName = "review")]
-        public List<Review> Reviews { get; set; }
+        public List<Review>? Reviews { get; set; }
         [XmlElement(ElementName = "image")]
-        public List<Image> Images { get; set; }
+        public List<Image>? Images { get; set; }
 
         [XmlIgnore]
         public DateTime? Date
@@ -139,6 +139,9 @@ namespace EpgMgr.XmlTV
 
         public Programme()
         {
+            StartTimeXml = string.Empty;
+            Channel = string.Empty;
+            Titles = new List<TextWithLang>();
             Initialize();
         }
 
@@ -147,23 +150,35 @@ namespace EpgMgr.XmlTV
             string? titleLang = null, string? subtitleLang = null, string? descriptionLang = null, 
             string? languageLang = null, string? categoryLang = null)
         {
+            StartTimeXml = string.Empty;
             StartTime = startTime;
             Channel = channel;
             StopTime = stopTime;
             Initialize();
+
+            Titles ??= new List<TextWithLang>();
             Titles.Add(new TextWithLang(title, titleLang));
 
             if (subtitle != null)
+            {
+                Subtitles ??= new List<TextWithLang>();
                 Subtitles.Add(new TextWithLang(subtitle, subtitleLang));
+            }
 
             if (description != null)
+            {
+                Descriptions ??= new List<TextWithLang>();
                 Descriptions.Add(new TextWithLang(description, descriptionLang));
+            }
 
             if (language != null)
                 Language = new TextWithLang(language, languageLang);
 
             if (category != null)
+            {
+                Categories ??= new List<TextWithLang>();
                 Categories.Add(new TextWithLang(category, categoryLang));
+            }
         }
 
         public void Initialize()
@@ -268,12 +283,14 @@ namespace EpgMgr.XmlTV
 
         public void AddCredit(CreditType type, string name, Image? image = null, XmlTvUrl? url = null)
         {
+            Credits ??= new Credits();
             Credits.AddCredit(type, name, image, url);
         }
 
         public void AddActor(string name, string? role = null, string? guest = null, Image? image = null,
             XmlTvUrl? url = null)
         {
+            Credits ??= new Credits();
             Credits.AddActor(name, role, guest, image, url);
         }
     }
@@ -286,7 +303,11 @@ namespace EpgMgr.XmlTV
         [XmlAttribute(AttributeName = "units")]
         public string Units { get; set; }
 
-        public Length() { }
+        public Length()
+        {
+            Value = 0;
+            Units = string.Empty;
+        }
 
         public Length(int value, string units)
         {
@@ -303,7 +324,11 @@ namespace EpgMgr.XmlTV
         [XmlAttribute(AttributeName = "system")]
         public string System { get; set; }
 
-        public EpisodeNum() { }
+        public EpisodeNum()
+        {
+            Value = string.Empty;
+            System = string.Empty;
+        }
 
         public EpisodeNum(string value, string system = "onscreen")
         {
@@ -410,7 +435,11 @@ namespace EpgMgr.XmlTV
         [XmlAttribute(AttributeName = "lang")]
         public string? Lang;
 
-        public Review() { }
+        public Review()
+        {
+            Value = string.Empty;
+            Type = string.Empty;
+        }
 
         public Review(string type, string value, string? source, string? reviewer, string? lang)
         {
@@ -531,7 +560,10 @@ namespace EpgMgr.XmlTV
         [XmlElement(ElementName = "url")]
         public XmlTvUrl? Url;
 
-        public CreditItem() { }
+        public CreditItem()
+        {
+            Name = string.Empty;
+        }
 
         public CreditItem(string name, Image? image = null, XmlTvUrl? url = null)
         {

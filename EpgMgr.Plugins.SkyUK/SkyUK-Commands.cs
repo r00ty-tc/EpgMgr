@@ -65,7 +65,7 @@ namespace EpgMgr.Plugins
                         region = DEFAULT_REGION;
                     }
 
-                    var regionData = regions.FirstOrDefault(row => row.RegionId.Equals(region));
+                    var regionData = regions?.FirstOrDefault(row => row.RegionId.Equals(region));
                     if (regionData == null)
                         throw new DataException($"Region {region} not found in region data!");
 
@@ -77,7 +77,7 @@ namespace EpgMgr.Plugins
                         return $"Invalid arguments. Usage: region set <regionid>";
 
                     var region = configRoot.GetValue<string>("SkyRegion");
-                    var regionData = regions.FirstOrDefault(row => row.RegionId.Equals(args[1], StringComparison.InvariantCultureIgnoreCase));
+                    var regionData = regions?.FirstOrDefault(row => row.RegionId.Equals(args[1], StringComparison.InvariantCultureIgnoreCase));
                     if (regionData == null)
                         return $"{ConsoleControl.ErrorColour}Invalid region {args[1]}";
 
@@ -90,7 +90,6 @@ namespace EpgMgr.Plugins
                         $"{ConsoleControl.SetFG(ConsoleColor.Green)}Region set to {regionData.RegionId} ({regionData.RegionName})";
                 }
             }
-            //var region = configRoot.GetValue<string>("SkyRegion");
             return "";
         }
 
@@ -107,7 +106,7 @@ namespace EpgMgr.Plugins
                     var searchString = string.Empty;
                     if (args.Length >= 2 && args[1].Equals("all", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        channels = configRoot.GetList<SkyChannel>("ChannelsAvailable");
+                        channels = configRoot.GetList<SkyChannel>("ChannelsAvailable") ?? new List<SkyChannel>();
                         if (channels == null || !channels.Any())
                             channels = GetApiChannels().ToList();
                         if (args.Length >= 3)
@@ -122,7 +121,7 @@ namespace EpgMgr.Plugins
 
                     if (!string.IsNullOrWhiteSpace(searchString))
                         channels = channels.Where(row =>
-                                row.ChannelName.Contains(searchString, StringComparison.InvariantCultureIgnoreCase))
+                                row.ChannelName != null && row.ChannelName.Contains(searchString, StringComparison.InvariantCultureIgnoreCase))
                             .ToList();
                     var result = "Number Name                      Type" + Environment.NewLine;
                     foreach (var channel in channels)
@@ -188,7 +187,7 @@ namespace EpgMgr.Plugins
                                 return
                                     $"{ConsoleControl.ErrorColour}Invalid arguments. Try channel alias set <channelNo> <Alias>";
                             channels = configRoot.GetList<SkyChannel>("ChannelsSubbed") ?? new List<SkyChannel>();
-                            var channel = channels.FirstOrDefault(row => row.ChannelNo.Equals(args[2]));
+                            var channel = channels.FirstOrDefault(row => row.ChannelNo != null && row.ChannelNo.Equals(args[2]));
                             if (channel == null)
                                 return
                                     $"{ConsoleControl.ErrorColour}Channel {args[2]} not found. Check it is a valid channel number";
@@ -196,7 +195,9 @@ namespace EpgMgr.Plugins
                             if (alias != null)
                                 return
                                     $"{ConsoleControl.ErrorColour}Alias already set for {args[2]}. {channel.ChannelName} -> {alias}. This needs to be removed first";
-                            m_core.AddAlias(channel.ChannelName, args[3]);
+                            if (channel.ChannelName != null)
+                                m_core.AddAlias(channel.ChannelName, args[3]);
+
                             return
                                 $"{ConsoleControl.SetFG(ConsoleColor.Green)}Added alias for channel {args[2]}. {channel.ChannelName} -> {args[3]}";
                         }
@@ -206,7 +207,7 @@ namespace EpgMgr.Plugins
                                 return
                                     $"{ConsoleControl.ErrorColour}Invalid arguments. Try channel alias remove <channelNo>";
                             channels = configRoot.GetList<SkyChannel>("ChannelsSubbed") ?? new List<SkyChannel>();
-                            var channel = channels.FirstOrDefault(row => row.ChannelNo.Equals(args[2]));
+                            var channel = channels.FirstOrDefault(row => row.ChannelNo != null && row.ChannelNo.Equals(args[2]));
                             if (channel == null)
                                 return
                                     $"{ConsoleControl.ErrorColour}Channel {args[2]} not found. Check it is a valid channel number";
@@ -214,7 +215,9 @@ namespace EpgMgr.Plugins
                             if (alias == null)
                                 return
                                     $"{ConsoleControl.ErrorColour}No alias found for {args[2]}. ({channel.ChannelName}). Nothing to remove";
-                            m_core.RemoveAlias(channel.ChannelName);
+                            if (channel.ChannelName != null)
+                                m_core.RemoveAlias(channel.ChannelName);
+
                             return
                                 $"{ConsoleControl.SetFG(ConsoleColor.Green)}Removed alias for channel {args[2]}. {channel.ChannelName} -> {alias}";
                         }

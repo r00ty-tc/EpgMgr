@@ -27,7 +27,11 @@ namespace EpgMgr.Plugins
             IncludeInXml = includeInXml;
         }
 
-        public CustomTag() { }
+        public CustomTag()
+        {
+            Key = string.Empty;
+            Value = string.Empty;
+        }
     }
 
     // All this configuration definition is with an aim to allow both a generic configuration possibility via console and later potentially GUI
@@ -125,6 +129,7 @@ namespace EpgMgr.Plugins
         /// <param name="parentEntry"></param>
         /// <param name="pluginId"></param>
         /// <param name="pluginName"></param>
+        /// <param name="consoleHidden"></param>
         public ConfigEntry(ConfigEntry? parentEntry = null, string? pluginId = null, string? pluginName = null, bool consoleHidden = false)
         {
             PluginId = pluginId;
@@ -309,8 +314,8 @@ namespace EpgMgr.Plugins
         /// <returns></returns>
         public List<T>? GetList<T>(string key)
         {
-            var objList = ConfigEntries?.FirstOrDefault(row => row.Key.Equals(key))?.ObjectList?.Cast<T>();
-            return (List<T>?)objList?.ToList();
+            var objList = ConfigEntries?.FirstOrDefault(row => row.Key!.Equals(key))?.ObjectList?.Cast<T>();
+            return objList?.ToList();
         }
 
         /// <summary>
@@ -321,8 +326,9 @@ namespace EpgMgr.Plugins
         /// <typeparam name="T"></typeparam>
         public void SetList<T>(string key, List<T> list)
         {
-            var entry = ConfigEntries?.FirstOrDefault(row => row.Key.Equals(key));
-            entry.ObjectList = list.Cast<dynamic>().ToList();
+            var entry = ConfigEntries?.FirstOrDefault(row => row.Key!.Equals(key));
+            if (entry != null)
+                entry.ObjectList = list.Cast<dynamic>().ToList();
         }
     }
 
@@ -377,7 +383,11 @@ namespace EpgMgr.Plugins
             LookupKey = lookupKey ?? id;
         }
 
-        public Channel() { }
+        public Channel()
+        {
+            Id = string.Empty;
+            LookupKey = string.Empty;
+        }
 
         public void AddTag(string key, string value, bool includeInXml = false)
         {
@@ -385,14 +395,14 @@ namespace EpgMgr.Plugins
             CustomTags.Add(new CustomTag(key, value, includeInXml));
         }
 
-        public CustomTag? GetTag(string key) => CustomTags.FirstOrDefault(row => row.Key.Equals(key));
+        public CustomTag? GetTag(string key) => CustomTags?.FirstOrDefault(row => row.Key.Equals(key));
         public void RemoveTag(string key)
         {
             var tag = GetTag(key);
             if (tag != null)
-                CustomTags.Remove(tag);
+                CustomTags?.Remove(tag);
         } 
-        public bool HasTag(string key) => CustomTags.Any(row => row.Key.Equals(key));
+        public bool HasTag(string key) => CustomTags?.Any(row => row.Key.Equals(key)) ?? false;
     }
 
     public class PluginErrors

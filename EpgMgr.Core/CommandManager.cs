@@ -1,4 +1,5 @@
-﻿using EpgMgr.Plugins;
+﻿using System.Data;
+using EpgMgr.Plugins;
 
 namespace EpgMgr
 {
@@ -7,9 +8,9 @@ namespace EpgMgr
     {
         private readonly Core m_core;
         private static readonly string[] primitives = { "cd", "ls", "dir", "exit", "quit", "save", "reload", "run", "?" };
-        private List<CommandReference> GlobalCommands;
-        private Dictionary<FolderEntry, List<CommandReference>> LocalCommands;
-        public FolderEntry RootFolder { get; private set; }
+        private List<CommandReference> GlobalCommands = null!;
+        private Dictionary<FolderEntry, List<CommandReference>> LocalCommands = null!;
+        public FolderEntry RootFolder { get; private set; } = null!;
 
         public CommandManager(Core core)
         {
@@ -88,6 +89,9 @@ namespace EpgMgr
             }
             else
             {
+                if (context == null)
+                    throw new DataException("SANITY CHECK. This should never happen! Attempting to add local command without context");
+
                 if (!LocalCommands.TryGetValue(context, out var commandList))
                 {
                     commandList = new List<CommandReference>();
@@ -176,7 +180,7 @@ namespace EpgMgr
             foreach (var movement in newFolder.Split('/'))
             {
                 // This is just to handle an initial / meaning absolute path
-                if (first && movement.Equals(String.Empty))
+                if (first && movement.Equals(string.Empty))
                 {
                     GetRootConfigFolder(ref tempContext);
                     first = false;

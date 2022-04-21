@@ -22,6 +22,7 @@ namespace EpgMgr.XmlTV
 
         public XmlTvUrl()
         {
+            Url = string.Empty;
         }
 
         public XmlTvUrl(string url, string? system = null)
@@ -45,6 +46,7 @@ namespace EpgMgr.XmlTV
 
         public TextWithLang()
         {
+            DisplayName = string.Empty;
         }
     }
 
@@ -90,7 +92,11 @@ namespace EpgMgr.XmlTV
             Value = value;
         }
 
-        public Icon() { }
+        public Icon()
+        {
+            Source = string.Empty;
+        }
+
     }
 
     [XmlType(TypeName = "image")]
@@ -119,6 +125,7 @@ namespace EpgMgr.XmlTV
 
         public Image()
         {
+            Url = string.Empty;
         }
 
         public Image(string url, string? type = null, int? size = null, string? orientation = null,
@@ -139,7 +146,12 @@ namespace EpgMgr.XmlTV
         public string Value { get; set; }
         [XmlElement(ElementName = "icon")]
         public Icon Icon { get; set; }
-        public ValueIcon() { }
+
+        public ValueIcon()
+        {
+            Value = string.Empty;
+            Icon = new Icon();
+        }
         public ValueIcon(Icon icon, string value)
         {
             Icon = icon;

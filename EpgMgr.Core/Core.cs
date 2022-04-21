@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.Data;
+using System.Xml;
 using System.Xml.Serialization;
 using EpgMgr.Plugins;
 
@@ -36,10 +37,13 @@ namespace EpgMgr
             var declaration = configXml.CreateXmlDeclaration("1.0", "UTF-8", null);
             var rootNode = configXml.DocumentElement;
             configXml.InsertBefore(declaration, rootNode);
-            using (var xmlWriter = configXml.CreateNavigator().AppendChild())
+            using (var xmlWriter = configXml.CreateNavigator()?.AppendChild())
             {
-                var serializer = new XmlSerializer(typeof(Config), m_configTypes.ToArray());
-                serializer.Serialize(xmlWriter, m_config);
+                if (xmlWriter != null)
+                {
+                    var serializer = new XmlSerializer(typeof(Config), m_configTypes.ToArray());
+                    serializer.Serialize(xmlWriter, m_config);
+                }
             }
 
             // We add plugin configs direct to XML just in case a plugin writer needs some custom XML code to store their config
@@ -48,6 +52,9 @@ namespace EpgMgr
             foreach (var plugin in PluginMgr.LoadedPlugins)
             {
                 var configNode = plugin.PluginObj.SaveConfig();
+                if (configNode == null)
+                    continue;
+
                 var node = (XmlElement) configXml.ImportNode(configNode, true);
 
                 // This removes the xmlns attributes that appear on every plugin config, without breaking dynamic type conversion
@@ -71,6 +78,9 @@ namespace EpgMgr
 
             // Main config load
             var serializer = new XmlSerializer(typeof(Config), m_configTypes.ToArray());
+            if (configXml.DocumentElement == null)
+                throw new DataException("Configuration document element is null.");
+
             var configTemp = (Config?)serializer.Deserialize(new XmlNodeReader(configXml.DocumentElement));
             if (configTemp != null)
                 m_config = configTemp;
@@ -103,12 +113,12 @@ namespace EpgMgr
             configXml.Load(CONFIG_FILE);
 
             // Now load plugin configs
-            var pluginConfigs = (XmlElement)configXml.DocumentElement.GetElementsByTagName("PluginConfigs").Item(0);
+            var pluginConfigs = (XmlElement?)configXml.DocumentElement?.GetElementsByTagName("PluginConfigs").Item(0);
 
             if (pluginConfigs == null)
                 throw new Exception($"Configuration file {CONFIG_FILE} doesn't contain a plugin configuration section");
 
-            var pluginElement = (XmlElement)pluginConfigs.GetElementsByTagName(plugin.Id.ToString()).Item(0);
+            var pluginElement = (XmlElement?)pluginConfigs.GetElementsByTagName(plugin.Id.ToString()).Item(0);
             plugin.LoadConfig(pluginElement);
         }
 
@@ -165,7 +175,7 @@ namespace EpgMgr
 
         public void RemoveAlias(string channelName)
         {
-            if (Config.ChannelNameToAlias.TryGetValue(channelName, out string alias))
+            if (Config.ChannelNameToAlias.TryGetValue(channelName, out var alias))
             {
                 Config.ChannelAliasToName.Remove(alias);
                 Config.ChannelNameToAlias.Remove(channelName);
@@ -180,8 +190,9 @@ namespace EpgMgr
             return nullIfNotFound ? null : alias;
         }
 
-        public string? GetAliasFromChannelName(string channelName, bool nullIfNotFound = false)
+        public string? GetAliasFromChannelName(string? channelName, bool nullIfNotFound = false)
         {
+            if (channelName == null) return null;
             if (Config.ChannelNameToAlias.TryGetValue(channelName, out var alias))
                 return alias;
 

@@ -20,7 +20,7 @@ namespace EpgMgr.Plugins
 
         internal const string DEFAULT_REGION = "4101-1";    // London HD
         public override Guid Id => Guid.Parse("17EC20A0-D302-4A42-BD10-23E5F08EDBAA");
-        public override string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        public override string Version => Assembly.GetExecutingAssembly().GetName().Version!.ToString();
         public override string Name => "Sky UK";
         public override string ConsoleName => "SkyUK";
 
@@ -43,10 +43,10 @@ namespace EpgMgr.Plugins
             var errors = new PluginErrors();
             var programmeList = new List<SkyEpgList>();
             var skyChannels = configRoot.GetList<SkyChannel>("ChannelsSubbed");
-            var totalLookups = (m_core.Config.XmlTvConfig.MaxDaysBehind + m_core.Config.XmlTvConfig.MaxDaysAhead + 1) * skyChannels.Count;
+            var totalLookups = (m_core.Config.XmlTvConfig.MaxDaysBehind + m_core.Config.XmlTvConfig.MaxDaysAhead + 1) * skyChannels?.Count;
             var lookupCount = 0;
             m_core.FeedbackMgr.UpdateStatus("Loading programmes from API", 0, totalLookups);
-            for (DateTime date = DateTime.Today.AddDays(0 - m_core.Config.XmlTvConfig.MaxDaysBehind);
+            for (var date = DateTime.Today.AddDays(0 - m_core.Config.XmlTvConfig.MaxDaysBehind);
                  date <= DateTime.Today.AddDays(m_core.Config.XmlTvConfig.MaxDaysAhead);
                  date = date.AddDays(1))
             {
@@ -55,7 +55,7 @@ namespace EpgMgr.Plugins
             }
             m_core.FeedbackMgr.UpdateStatus("Done loading from API");
 
-            var totalPrograms = programmeList.Sum(epg => epg.Schedules.Sum(schedule => schedule.Programmes.Length));
+            var totalPrograms = programmeList.Sum(epg => epg.Schedules.Sum(schedule => schedule.Programmes?.Length));
             var currentProgram = 0;
 
             m_core.FeedbackMgr.UpdateStatus("Updating programmes", 0, totalPrograms);
@@ -63,35 +63,40 @@ namespace EpgMgr.Plugins
             {
                 foreach (var schedule in epg.Schedules)
                 {
-                    var channel = skyChannels.FirstOrDefault(row => row.Sid.Equals(schedule.Sid));
+                    var channel = skyChannels?.FirstOrDefault(row => row.Sid != null && row.Sid.Equals(schedule.Sid));
                     if (channel == null)
                     {
                         errors.AddError($"Channel {schedule.Sid} was not found");
                     }
                     else
                     {
+                        if (schedule.Programmes == null) continue;
                         foreach (var programme in schedule.Programmes)
                         {
+                            if (!programme.StartTime.HasValue)
+                                continue;
+
                             // Remove overlapping program(s)
-                            xmltv.DeleteOverlaps(programme.StartTime, programme.EndTime, m_core.GetAliasFromChannelName(channel.ChannelName));
+                            if (programme.EndTime.HasValue)
+                                xmltv.DeleteOverlaps(programme.StartTime.Value, programme.EndTime.Value, m_core.GetAliasFromChannelName(channel.ChannelName)!);
 
                             // Generate new XMLTV programme
-                            var xmltvProgramme = xmltv.GetNewProgramme(programme.StartTime, m_core.GetAliasFromChannelName(channel.ChannelName),
-                                programme.Title,
+                            var xmltvProgramme = xmltv.GetNewProgramme(programme.StartTime.Value, m_core.GetAliasFromChannelName(channel.ChannelName)!,
+                                programme.Title ?? string.Empty,
                                 programme.EndTime, null, programme.Synopsis, null, null, "en", null, "en");
 
                             // Add episode info if present
                             if (programme.SeasonNo > 0 && programme.EpisodeNo > 0)
-                                xmltvProgramme.AddEpisodeNum($"{programme.SeasonNo}{programme.EpisodeNo.ToString("D2")}");
+                                xmltvProgramme.AddEpisodeNum($"{programme.SeasonNo}{programme.EpisodeNo.Value.ToString("D2")}");
                             if (!string.IsNullOrWhiteSpace(programme.EpisodeId))
                                 xmltvProgramme.AddEpisodeNum(programme.EpisodeId, "skyuk_epid");
 
                             // Add category if enabled and present and valid
-                            if (m_core.Config.XmlTvConfig.IncludeProgrammeCategories)
+                            if (m_core.Config.XmlTvConfig.IncludeProgrammeCategories && programme.Eg.HasValue)
                             {
-                                var genre = getGenre(programme.Eg);
-                                if (genre != null)
-                                    xmltvProgramme.AddCategory(genre);
+                                    var genre = getGenre(programme.Eg.Value);
+                                    if (genre != null)
+                                        xmltvProgramme.AddCategory(genre);
                             }
                             currentProgram++;
                             if (currentProgram % 100 == 0 || currentProgram == totalPrograms)
@@ -124,7 +129,7 @@ namespace EpgMgr.Plugins
                 ConfigEntry.NewConfigList(configRoot, "SkyServiceGenres", "genres", new List<SkyServiceGenre>());
 
             // If either regions or genres aren't found, fetch them from API
-            if (regions == null || !allChannels.Any() || genres == null || !genres.Any())
+            if (regions == null || !regions.Any() || genres == null || !genres.Any())
             {
                 LoadBlobData();
             }
@@ -153,7 +158,7 @@ namespace EpgMgr.Plugins
             if (skyChannels == null)
                 return new List<EpgMgr.Channel>().ToArray();
 
-            return skyChannels.Select(row => new EpgMgr.Channel(m_core.GetAliasFromChannelName(row.ChannelName), m_core.GetAliasFromChannelName(row.ChannelName), "en", row.LogoUrl)
+            return skyChannels.Select(row => new EpgMgr.Channel(m_core.GetAliasFromChannelName(row.ChannelName)!, m_core.GetAliasFromChannelName(row.ChannelName), "en", row.LogoUrl)
             {
                 SkySID = row.Sid
             }).ToArray();
@@ -181,8 +186,10 @@ namespace EpgMgr.Plugins
             }
 
             var channels = m_web.GetJSON<SkyChannels>(API_CHANNEL_PREFIX + $"{region.Bouquet}/{region.SubBouquet}") ?? new SkyChannels();
-            configRoot.SetList<SkyChannel>("ChannelsAvailable", channels.Channels.ToList());
-            return channels.Channels;
+            if (channels.Channels != null)
+                configRoot.SetList<SkyChannel>("ChannelsAvailable", channels.Channels.ToList());
+
+            return channels.Channels ?? Array.Empty<SkyChannel>();
         }
 
         protected IEnumerable<SkyChannel> ProcessRange(string[] rangeArgs, IEnumerable<SkyChannel> channels)
@@ -204,7 +211,7 @@ namespace EpgMgr.Plugins
                 else
                 {
                     var thisChannel = channels.FirstOrDefault(row =>
-                        row.ChannelNo.Equals(arg, StringComparison.InvariantCultureIgnoreCase));
+                        row.ChannelNo != null && row.ChannelNo.Equals(arg, StringComparison.InvariantCultureIgnoreCase));
                     if (thisChannel != null)
                         newChannels.Add(thisChannel);
                 }
@@ -221,12 +228,12 @@ namespace EpgMgr.Plugins
                 date = DateTime.Today;
             var uri = API_PROGRAMME_PREFIX + date.Value.ToString("yyyyMMdd") + "/" + string.Join(",", channels.Select(row => row.Sid));
             var programmes = m_web.GetJSON<SkyEpgList>(uri);
-            return programmes;
+            return programmes ?? new SkyEpgList();
         }
 
         protected SkyEpgList[] GetAllProgrammes(ref int count, DateTime? date = null)
         {
-            List<SkyChannel> toProcess = new List<SkyChannel>();
+            var toProcess = new List<SkyChannel>();
             var existingChannels = configRoot.GetList<SkyChannel>("ChannelsSubbed") ?? new List<SkyChannel>();
             var programmeList = new List<SkyEpgList>();
             foreach (var channel in existingChannels)

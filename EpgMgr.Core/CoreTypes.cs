@@ -14,7 +14,13 @@ namespace EpgMgr
         [XmlAttribute]
         public string ConsoleId { get; set; }
 
-        public PluginConfigEntry() { }
+        public PluginConfigEntry()
+        {
+            Id = string.Empty;
+            Name = string.Empty;
+            DllFile = string.Empty;
+            ConsoleId = string.Empty;
+        }
 
         public PluginConfigEntry(string id, string name, string dllFile, string? consoleId = null)
         {
@@ -38,7 +44,12 @@ namespace EpgMgr
             Alias = alias;
         }
 
-        public ChannelAlias() { }
+        public ChannelAlias()
+        {
+            ChannelName = string.Empty;
+            Alias = string.Empty;
+
+        }
     }
 
     [XmlType]
@@ -71,7 +82,7 @@ namespace EpgMgr
             };
             ChannelNameToAlias = new Dictionary<string, string>();
             ChannelAliasToName = new Dictionary<string, string>();
-
+            ChannelAliases = new List<ChannelAlias>();
         }
 
         public void PostLoadConfig()
@@ -90,6 +101,20 @@ namespace EpgMgr
     [XmlType(TypeName = "XmlTv")]
     public class ConfigXmlTv
     {
+        public ConfigXmlTv()
+        {
+            Filename = string.Empty;
+            IncludeProgrammeCredits = false;
+            IncludeProgrammeCategories = false;
+            IncludeProgrammeIcons = false;
+            IncludeProgrammeRatings = false;
+            IncldeProgrammeStarRatings = false;
+            IncludeProgrammeReviews = false;
+            IncludeProgrammeImages = false;
+            MaxDaysAhead = 5;
+            MaxDaysBehind = 1;
+        }
+
         [XmlElement]
         public string Filename { get; set; }
         [XmlAttribute]

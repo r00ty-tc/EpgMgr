@@ -173,7 +173,7 @@ namespace EpgMgr
             return (
                 from plugin in assembly.ExportedTypes 
                 where plugin.FullName != null && plugin.BaseType == typeof(Plugin) 
-                select (Plugin?)assembly.CreateInstance(plugin.FullName, false, BindingFlags.Default, null, 
+                select (Plugin?)assembly.CreateInstance(plugin.FullName!, false, BindingFlags.Default, null, 
                     new object[] { m_core }, CultureInfo.CurrentCulture, null)
                 ).FirstOrDefault(thisPlugin => thisPlugin != null);
         }

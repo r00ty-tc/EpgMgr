@@ -18,7 +18,7 @@ namespace EpgMgr.Plugins
         {
             // Progress bar test
             core.FeedbackMgr.UpdateStatus("Progress bar test",0,250);
-            for (int i = 0; i <= 250; i++)
+            for (var i = 0; i <= 250; i++)
             {
                 core.FeedbackMgr.UpdateStatus(null, i);
                 Thread.Sleep(10);
@@ -78,11 +78,10 @@ namespace EpgMgr.Plugins
 
         public string CommandHandlerLISTCHANNELS(Core core, ref FolderEntry context, string command, string[] args)
         {
-            if (args.Length > 1 || (args.Length == 1 && !args.FirstOrDefault().Equals("all")))
+            if (args.Length > 1 || (args.Length == 1 && !args.FirstOrDefault()!.Equals("all")))
                 return "Invalid arguments. Use listchannels [all].";
 
-            var allMode = args.FirstOrDefault() != null &&
-                          args.FirstOrDefault().Equals("all", StringComparison.InvariantCultureIgnoreCase);
+            var allMode = args.FirstOrDefault()!.Equals("all", StringComparison.InvariantCultureIgnoreCase);
 
             var result = string.Empty;
             if (!allMode)

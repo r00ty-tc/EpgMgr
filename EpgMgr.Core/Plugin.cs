@@ -20,7 +20,7 @@ namespace EpgMgr.Plugins
             this.m_core = mCore;
             configRoot = new ConfigEntry(null, Id.ToString(), Name);
             configTypes = new List<Type>();
-            configTypes.Add(typeof(System.String));
+            configTypes.Add(typeof(string));
         }
 
         public abstract EpgMgr.Channel[] GetXmlTvChannels();
@@ -35,10 +35,11 @@ namespace EpgMgr.Plugins
             if (pluginConfig == null) return;
             // Default will be to just flat deserialize to XML
             // Anything more complex should just override this method
-            using (XmlReader xmlReader = pluginConfig.CreateNavigator().ReadSubtree())
+            using (var xmlReader = pluginConfig.CreateNavigator()?.ReadSubtree())
             {
+                if (xmlReader == null) return;
                 var serializer = new XmlSerializer(typeof(ConfigEntry), configTypes.ToArray());
-                var configTemp = (ConfigEntry)serializer.Deserialize(xmlReader);
+                var configTemp = (ConfigEntry?)serializer.Deserialize(xmlReader);
                 if (configTemp != null)
                     configRoot = configTemp;
             }
@@ -50,8 +51,9 @@ namespace EpgMgr.Plugins
             // Anything more complex should just override this method
             var doc = new XmlDocument();
 
-            using (XmlWriter xmlWriter = doc.CreateNavigator().AppendChild())
+            using (var xmlWriter = doc.CreateNavigator()?.AppendChild())
             {
+                if (xmlWriter == null) return null;
                 var serializer = new XmlSerializer(typeof(ConfigEntry), configTypes.ToArray());
                 serializer.Serialize(xmlWriter, configRoot);
             }

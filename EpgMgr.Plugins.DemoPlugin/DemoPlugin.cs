@@ -6,7 +6,7 @@ namespace EpgMgr.Plugins
     public partial class DemoPlugin : Plugin
     {
         public override Guid Id => Guid.Parse("b2e441ae-ac93-467e-b6a9-19782bf7c011");
-        public override string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        public override string Version => Assembly.GetExecutingAssembly().GetName().Version!.ToString();
         public override string Name => "Demo Plugin";
         public override string ConsoleName => "Demo";
 
@@ -60,7 +60,9 @@ namespace EpgMgr.Plugins
             allChannels.Add(new Channel("BBC2", "BBC Two"));
             allChannels.Add(new Channel("ITV", "ITV"));
             configRoot.SetList<Channel>("ChannelsAvailable", allChannels);
-            subChannels.Add(allChannels.FirstOrDefault(row => row.Id.Equals("BBC2")));
+            var bbc2 = allChannels.FirstOrDefault(row => row.Id.Equals("BBC2"));
+            if (bbc2 != null)
+                subChannels.Add(bbc2);
             configRoot.SetList<Channel>("ChannelsSubbed", subChannels);
         }
     }

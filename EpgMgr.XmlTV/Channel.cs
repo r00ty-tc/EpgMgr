@@ -81,6 +81,10 @@ namespace EpgMgr
 
         public Channel()
         {
+            Id = string.Empty;
+            DisplayNames = new List<TextWithLang>();
+            Icons = new List<Icon>();
+            Urls = new List<XmlTvUrl>();
             Programmes = new Dictionary<DateTimeOffset, Programme>();
         }
 

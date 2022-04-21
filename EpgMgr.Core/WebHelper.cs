@@ -18,8 +18,10 @@ namespace EpgMgr
             else
             {
                 DefaultUserAgent = $"Mozilla/5.0 ({EnvAgentString})";
-                DefaultUserAgent +=
-                    $" EpgMgr/{Assembly.GetExecutingAssembly().GetName().Version.Major}.{Assembly.GetExecutingAssembly().GetName().Version.Minor}";
+                var version = Assembly.GetExecutingAssembly().GetName().Version;
+                if (version != null)
+                    DefaultUserAgent +=
+                        $" EpgMgr/{version.Major}.{version.Minor}";
             }
 
             m_httpClient = new HttpClient(new HttpClientHandler()
@@ -41,18 +43,13 @@ namespace EpgMgr
                     CharSet = Encoding.UTF8.WebName
                 });
             }
-
-            //m_httpClient.DefaultRequestHeaders.UserAgent.Clear();
-            //m_httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Mozilla", "5.0"));
-            //m_httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(userAgent ?? DefaultUserAgent, $"{Assembly.GetExecutingAssembly().GetName().Version.Major}.{Assembly.GetExecutingAssembly().GetName().Version.Minor}"));
-            //m_httpClient.DefaultRequestHeaders.UserAgent.ParseAdd();
         }
 
         public static string EnvAgentString
         {
             get
             {
-                string envId = "Other";
+                var envId = "Other";
                 if (OperatingSystem.IsLinux())
                 {
                     envId = "Linux;";
@@ -91,21 +88,22 @@ namespace EpgMgr
 
         // Parse incoming known object with JSON serializer.
         // Perform post method and parse response via JSON serializer to known object type
-        public V PostJSON<V, T>(string command, T obj, Dictionary<string, string>? headers = null)
+        public V? PostJSON<V, T>(string command, T obj, Dictionary<string, string>? headers = null)
         {
             var requestString = CreateJSONstring(obj);
+            if (requestString == null) return default;
             var response = WebPost(command, requestString, headers);
             var result = ParseJSON<V>(response);
             return result;
         }
 
         // Perform get method and parse response via JSON serializer to known object type
-        public T GetJSON<T>(string command, Dictionary<string, string>? headers = null) => ParseJSON<T>(WebGet(command, headers));
+        public T? GetJSON<T>(string command, Dictionary<string, string>? headers = null) => ParseJSON<T>(WebGet(command, headers));
 
         // Perform put method and parse response via JSON serializer to known object type
-        public T PutJSON<T>(string command, Dictionary<string, string>? headers = null) => ParseJSON<T>(WebPut(command, headers));
+        public T? PutJSON<T>(string command, Dictionary<string, string>? headers = null) => ParseJSON<T>(WebPut(command, headers));
     
-        public T DeleteJSON<T>(string command, Dictionary<string, string>? headers = null) => ParseJSON<T>(WebDelete(command, headers));
+        public T? DeleteJSON<T>(string command, Dictionary<string, string>? headers = null) => ParseJSON<T>(WebDelete(command, headers));
 
         // Handle get request, return response as string
         public string WebGet(string uri, Dictionary<string, string>? headers = null)

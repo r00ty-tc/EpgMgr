@@ -5,10 +5,9 @@ using System.Runtime.InteropServices;
 using EpgMgr;
 using Console = System.Console;
 
+#if SIGNED
 [DllImport("mscoree.dll", CharSet = CharSet.Unicode)]
 static extern bool StrongNameSignatureVerificationEx(string wszFilePath, bool fForceVerification, ref bool pfWasVerified);
-
-#if SIGNED
 var publicKey =
     @"ACQAAASAAACUAAAABgIAAAAkAABSU0ExAAQAAAEAAQCBwN/koxj5XuQ/5ht39fl7o51gd32MBvB4i5oC409tCewSageo2alerW+9RrKVIv9hi/k5bBcfwRCA3R4hXDHQJz2Ixzhzr6lG8w9PE3GseA6RyJzDd6gQcrmWAaAEptuJwB2iLdL49eaD1x3xBr7Q+23zlnVsc7/lHLCdZ1HB2g==";
 
@@ -42,7 +41,7 @@ var core = new Core(UpdateFeedback);
 
 var context = core.CommandMgr.RootFolder;
 ConsoleControl.WriteLine($"EpgMgr Console {Assembly.GetExecutingAssembly().GetName().Version}");
-bool useConsole = true;
+var useConsole = true;
 if (args.Length != 0)
 {
     useConsole = ProcessArgs(args.ToList());
@@ -67,6 +66,9 @@ bool ProcessArgs(List<string> args)
     while (args.Count > 0)
     {
         var arg = TakeArg(args);
+        if (arg == null)
+            break;
+
         switch (arg.ToLower())
         {
             case "-file":
@@ -78,7 +80,8 @@ bool ProcessArgs(List<string> args)
                     Environment.Exit(1);
                 }
 
-                if (!new FileInfo(file).Directory.Exists)
+                var info = new FileInfo(file);
+                if (info.Directory is { Exists: true })
                 {
                     ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Folder for {file} doesn't exist");
                     Environment.Exit(1);
@@ -107,7 +110,8 @@ bool ProcessArgs(List<string> args)
 
     if (willRun)
         core.MakeXmlTV();
-    return false;
+
+    return useConsole;
 }
 
 static string? TakeArg(List<string> args)
@@ -155,7 +159,7 @@ void UpdateFeedback(object? sender, FeedbackEventArgs eventArgs)
     {
         // Otherwise handle progress bar
         progressMode = true;
-        int progress = Math.Min((int)Math.Round(eventArgs.Info.Percent / 4, 0, MidpointRounding.AwayFromZero), 25);
+        var progress = Math.Min((int)Math.Round(eventArgs.Info.Percent / 4, 0, MidpointRounding.AwayFromZero), 25);
         var statusString = $"{eventArgs.Info.Status,-35}[{new string('▓', progress)}{new string('░', 25 - progress)}] {eventArgs.Info.CurrentItem}/{eventArgs.Info.MaxItems} ({Math.Round(eventArgs.Info.Percent, 2):0.00}%)";
         if (!lastStatus.Equals(eventArgs.Info.Status))
             ConsoleControl.Write(Environment.NewLine);

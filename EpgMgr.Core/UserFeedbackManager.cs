@@ -17,7 +17,7 @@
 
         public object Clone()
         {
-            FeedbackInfo newInfo = new FeedbackInfo
+            var newInfo = new FeedbackInfo
             {
                 Status = Status,
                 CurrentItem = CurrentItem,

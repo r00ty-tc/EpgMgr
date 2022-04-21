@@ -84,8 +84,6 @@ namespace EpgMgr
                 default:
                     return $"{ConsoleControl.SetFG(ConsoleColor.Red)}Invalid sub-command. Valid are list, enable, disable";
             }
-
-            return "";
         }
 
         internal static string CommandHandlerCD(Core core, ref FolderEntry context, string command, string[] args)
@@ -152,15 +150,15 @@ namespace EpgMgr
             if (varObj == null)
                 return $"Invalid variable {variable}";
 
-            bool valueChanged = false;
+            var valueChanged = false;
             try
             {
                 var origValue = varObj.Value;
                 // Set the value we need to parse the string to the correct type
                 varObj.Value = ParseValue(args[1], varObj.Type);
-                valueChanged = (!origValue.Equals(varObj.Value));
+                valueChanged = (!origValue?.Equals(varObj.Value));
             }
-            catch (FormatException ex)
+            catch (FormatException /*ex*/)
             {
                 return $"{ConsoleControl.SetFG(ConsoleColor.DarkRed)}Invalid format for variable";
             }
@@ -209,7 +207,7 @@ namespace EpgMgr
                     if (args.Length != 3)
                         return $"{ConsoleControl.ErrorColour}Invalid Arguments. Usage: alias set <channelname> <alias>";
 
-                    if (core.Config.ChannelNameToAlias.TryGetValue(args[1], out string? alias))
+                    if (core.Config.ChannelNameToAlias.TryGetValue(args[1], out var alias))
                         return
                             $"{ConsoleControl.ErrorColour}Channel alias for {args[1]} already set to {alias}. You must remove the old alias first";
                     core.AddAlias(args[1], args[2]);
@@ -230,7 +228,7 @@ namespace EpgMgr
 
                     if (args.Length != 2)
                         return $"{ConsoleControl.ErrorColour}Invalid Arguments. Usage: alias show <channelName>";
-                    if (!core.Config.ChannelNameToAlias.TryGetValue(args[1], out string? alias))
+                    if (!core.Config.ChannelNameToAlias.TryGetValue(args[1], out var alias))
                         return
                             $"{ConsoleControl.ErrorColour}Channel alias for {args[1]} was not found, nothing to show";
                     return $"Alias for channel {args[1]} is {alias}";
@@ -248,7 +246,6 @@ namespace EpgMgr
                 default:
                     return $"{ConsoleControl.ErrorColour}Invalid sub-command {args[0]}";
             }
-            return "";
         }
         internal static string CommandHandlerHELP(Core core, ref FolderEntry context, string command, string[] args)
         {
