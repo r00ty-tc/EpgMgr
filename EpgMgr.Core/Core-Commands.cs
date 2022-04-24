@@ -170,8 +170,7 @@ namespace EpgMgr
             if (valueChanged)
                 return
                     $"{ConsoleControl.SetFG(ConsoleColor.Yellow)}{varObj.ValueId}{ConsoleControl.SetFG(ConsoleColor.White)} = {ConsoleControl.SetFG(ConsoleColor.Green)}{varObj.Value}{ConsoleControl.SetFG(ConsoleColor.White)}";
-            else
-                return "";
+            return "";
         }
         internal static string CommandHandlerEXIT(Core core, ref FolderEntry context, string command, string[] args)
         {

@@ -5,19 +5,41 @@ using EpgMgr.Plugins;
 
 namespace EpgMgr
 {
-    public class Core
+    /// <summary>
+    /// This is the core class. It contains logic for the overall functionality and contain references to the managers for specific functionality.
+    /// </summary>
+    public class Core : IDisposable
     {
-        private Config m_config;
-        private List<Type> m_configTypes;
-        public static readonly string CONFIG_FILE = "Config.xml";
+        // ReSharper disable once CollectionNeverUpdated.Local
+        private readonly List<Type> m_configTypes;
+        /// <summary>
+        /// Contains the filename for the configuration file
+        /// </summary>
+        public const string CONFIG_FILE = "Config.xml";
+        /// <summary>
+        /// Reference to the plugin manager
+        /// </summary>
         public PluginManager PluginMgr;
+        /// <summary>
+        /// Reference to the user feedback manager.
+        /// </summary>
         public UserFeedbackManager FeedbackMgr { get; set; }
+        /// <summary>
+        /// Reference to the console command manager
+        /// </summary>
         public CommandManager CommandMgr;
-        public Config Config => m_config;
+        /// <summary>
+        /// Reference to the configuration
+        /// </summary>
+        public Config Config { get; private set; }
 
+        /// <summary>
+        /// Create new instance of the core object. Optional feedback event handler, required to get initial loading feedback
+        /// </summary>
+        /// <param name="feedback"></param>
         public Core(EventHandler<FeedbackEventArgs>? feedback = null)
         {
-            m_config = new Config();
+            Config = new Config();
             m_configTypes = new List<Type>();
             FeedbackMgr = new UserFeedbackManager(feedback);
             PluginMgr = new PluginManager(this);
@@ -29,6 +51,10 @@ namespace EpgMgr
             CommandMgr.RefreshPlugins();
         }
 
+        /// <summary>
+        /// Save the configuration (core and plugins)
+        /// </summary>
+        /// <returns></returns>
         public long SaveConfig()
         {
             Config.PreSaveConfig();
@@ -42,7 +68,7 @@ namespace EpgMgr
                 if (xmlWriter != null)
                 {
                     var serializer = new XmlSerializer(typeof(Config), m_configTypes.ToArray());
-                    serializer.Serialize(xmlWriter, m_config);
+                    serializer.Serialize(xmlWriter, Config);
                 }
             }
 
@@ -69,6 +95,12 @@ namespace EpgMgr
             return new FileInfo(CONFIG_FILE).Length;
         }
 
+        /// <summary>
+        /// Load the configuration (core and plugins)
+        /// </summary>
+        /// <param name="coreOnly"></param>
+        /// <exception cref="DataException"></exception>
+        /// <exception cref="Exception"></exception>
         public void LoadConfig(bool coreOnly = false)
         {
             var configXml = new XmlDocument();
@@ -83,12 +115,12 @@ namespace EpgMgr
 
             var configTemp = (Config?)serializer.Deserialize(new XmlNodeReader(configXml.DocumentElement));
             if (configTemp != null)
-                m_config = configTemp;
+                Config = configTemp;
 
             if (coreOnly) return;
             var plugins = PluginMgr.PluginNames;
 
-            PluginMgr.LoadPlugins(m_config.EnabledPlugins);
+            PluginMgr.LoadPlugins(Config.EnabledPlugins);
 
             // Now load plugin configs
             var pluginConfigs = configXml.DocumentElement.GetElementsByTagName("PluginConfigs").Item(0);
@@ -122,6 +154,9 @@ namespace EpgMgr
             plugin.LoadConfig(pluginElement);
         }
 
+        /// <summary>
+        /// Create the XMLTV file (from all enabled plugins)
+        /// </summary>
         public void MakeXmlTV()
         {
             // If file exists open it. If not, make a new xmltv
@@ -132,8 +167,7 @@ namespace EpgMgr
                 xmltvFile = XmlTV.XmlTV.Load(Config.XmlTvConfig.Filename);
             }
 
-            if (xmltvFile == null)
-                xmltvFile = new XmlTV.XmlTV(DateTime.Today);
+            xmltvFile ??= new XmlTV.XmlTV(DateTime.Today);
 
             // Trim days out of date
             var oldPrograms = xmltvFile.Programmes.Where(row =>
@@ -154,7 +188,7 @@ namespace EpgMgr
                 xmltvFile.Channels.AddRange(channels);
             }
 
-            // Update links
+            // Update links (mainly we want to remove data for channels that no longer exist)
             xmltvFile.UpdateData();
 
             // Update programs from plugins
@@ -164,8 +198,15 @@ namespace EpgMgr
             }
             FeedbackMgr.UpdateStatus("Saving XMLTV");
             xmltvFile.Save(Config.XmlTvConfig.Filename);
+            var info = new FileInfo(Config.XmlTvConfig.Filename);
+            FeedbackMgr.UpdateStatus($"Wrote {info.Length} bytes to {Config.XmlTvConfig.Filename}");
         }
 
+        /// <summary>
+        /// Add channel alias, will add to both way lookup tables
+        /// </summary>
+        /// <param name="channelName"></param>
+        /// <param name="alias"></param>
         public void AddAlias(string channelName, string alias)
         {
             if (Config.ChannelNameToAlias.ContainsKey(channelName)) return;
@@ -173,6 +214,10 @@ namespace EpgMgr
             Config.ChannelAliasToName.Add(alias, channelName);
         }
 
+        /// <summary>
+        /// Remove alias from both way lookup tables
+        /// </summary>
+        /// <param name="channelName"></param>
         public void RemoveAlias(string channelName)
         {
             if (Config.ChannelNameToAlias.TryGetValue(channelName, out var alias))
@@ -182,6 +227,12 @@ namespace EpgMgr
             }
         }
 
+        /// <summary>
+        /// Return channel name based on provided alias. If nullIfNotFound is not set, the alias will be returned if the alias is not found.
+        /// </summary>
+        /// <param name="alias"></param>
+        /// <param name="nullIfNotFound"></param>
+        /// <returns></returns>
         public string? GetChannelNameFromAlias(string alias, bool nullIfNotFound = false)
         {
             if (Config.ChannelAliasToName.TryGetValue(alias, out var channelName))
@@ -190,6 +241,12 @@ namespace EpgMgr
             return nullIfNotFound ? null : alias;
         }
 
+        /// <summary>
+        /// Return alias based on provided channel name. If nottIfNotFound is not set, the channel name will be returned if no alias has been set for the provided channel.
+        /// </summary>
+        /// <param name="channelName"></param>
+        /// <param name="nullIfNotFound"></param>
+        /// <returns></returns>
         public string? GetAliasFromChannelName(string? channelName, bool nullIfNotFound = false)
         {
             if (channelName == null) return null;
@@ -200,10 +257,32 @@ namespace EpgMgr
 
         }
 
+        /// <summary>
+        /// Returns all plugins (enabled or not). Will scan plugins folder.
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<PluginConfigEntry> GetAllPlugins() => PluginMgr.GetAllPlugins();
 
+        /// <summary>
+        /// Returns enabled plugins.
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<Plugin> GetActivePlugins() => PluginMgr.LoadedPlugins.Select(row => row.PluginObj);
 
+        /// <summary>
+        /// Uses command manager to handle the specified command text
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="command"></param>
+        /// <returns></returns>
         public string HandleCommand(ref FolderEntry context, string command) => CommandMgr.HandleCommand(ref context, command);
+
+        /// <summary>
+        /// Disposal of other IDisposables
+        /// </summary>
+        public void Dispose()
+        {
+            FeedbackMgr.Dispose();
+        }
     }
 }

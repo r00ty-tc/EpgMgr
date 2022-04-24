@@ -4,12 +4,30 @@ using EpgMgr.Plugins;
 
 namespace EpgMgr
 {
+    /// <summary>
+    /// Plugin Entry class
+    /// </summary>
     public class PluginEntry
     {
+        /// <summary>
+        /// Plugin data type
+        /// </summary>
         public Type PluginType { get; set; }
+        /// <summary>
+        /// Plugin Name
+        /// </summary>
         public string PluginName { get; set; }
+        /// <summary>
+        /// Reference to Plugin object
+        /// </summary>
         public Plugin PluginObj { get; set; }
 
+        /// <summary>
+        /// Create new plugin entry
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="name"></param>
+        /// <param name="plugin"></param>
         public PluginEntry(Type type, string name, Plugin plugin)
         {
             PluginType = type;
@@ -18,6 +36,9 @@ namespace EpgMgr
         }
     }
 
+    /// <summary>
+    /// The plugin manager class. Handles loading and managing plugins
+    /// </summary>
     public class PluginManager
     {
 
@@ -33,8 +54,15 @@ namespace EpgMgr
         private List<PluginConfigEntry> m_pluginConfigs;
         private readonly Core m_core;
         private readonly string folderSeparator;
+        /// <summary>
+        /// Storage for a list of plugin console ids
+        /// </summary>
         public string[] PluginConsoleNames { get; private set; }
 
+        /// <summary>
+        /// Creeate new Plugin Manage instance
+        /// </summary>
+        /// <param name="core"></param>
         public PluginManager(Core core)
         {
             m_core = core;
@@ -46,6 +74,10 @@ namespace EpgMgr
 
         internal IEnumerable<PluginEntry> LoadedPlugins => m_loadedPlugins;
 
+        /// <summary>
+        /// Load the plugins from the list of plugin config entries passed in
+        /// </summary>
+        /// <param name="enabledPlugins"></param>
         public void LoadPlugins(IEnumerable<PluginConfigEntry> enabledPlugins)
         {
             // Clear all current plugins (GC needs to deal with this)
@@ -61,13 +93,17 @@ namespace EpgMgr
             m_core.FeedbackMgr.UpdateStatus($"Done loading {m_loadedPlugins.Count} plugins");
 
             PluginConsoleNames = m_loadedPlugins.Select(row => row.PluginObj.ConsoleName).ToArray();
-            if (m_core.CommandMgr != null)
-                m_core.CommandMgr.RefreshPlugins();
+            m_core.CommandMgr.RefreshPlugins();
         }
 
-        public IEnumerable<PluginConfigEntry> GetAllPlugins(bool forceRefrest = false)
+        /// <summary>
+        /// Return a list of all available plugins. Will scan folder if forced, or there's no plugin list yet.
+        /// </summary>
+        /// <param name="forceRefresh"></param>
+        /// <returns></returns>
+        public IEnumerable<PluginConfigEntry> GetAllPlugins(bool forceRefresh = false)
         {
-            if (!forceRefrest && m_pluginConfigs.Any())
+            if (!forceRefresh && m_pluginConfigs.Any())
                 return m_pluginConfigs;
 
             var fileList = Directory.GetFiles("Plugins", "*.dll");
@@ -81,9 +117,16 @@ namespace EpgMgr
 
             return m_pluginConfigs;
         }
+        /// <summary>
+        /// Enable plugin specified by guid, console id or name.
+        /// </summary>
+        /// <param name="guid"></param>
+        /// <param name="consoleId"></param>
+        /// <param name="name"></param>
+        /// <exception cref="ArgumentException"></exception>
         public void EnablePlugin(string? guid, string? consoleId = null, string? name = null)
         {
-            if (guid == name && consoleId == null && name == null)
+            if (guid == null && consoleId == null && name == null)
                 throw new ArgumentException("EnablePlugin invoked with no valid arguments");
 
             if (!m_pluginConfigs.Any())
@@ -93,12 +136,12 @@ namespace EpgMgr
                 row => guid != null ? row.Id.Equals(guid, StringComparison.InvariantCultureIgnoreCase) :
                     1 == 0 ||
                     consoleId != null ? row.ConsoleId.Equals(consoleId, StringComparison.CurrentCultureIgnoreCase) :
-                    1 == 0 ||
-                    name != null ? row.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase) : 1 == 0);
+                    (1 == 0 ||
+                     name != null) && row.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
 
             if (pluginConfig == null)
             {
-                m_core.FeedbackMgr.UpdateStatus("Failed to find plugin" + guid != null ? $"Guid: {guid}" : "" + consoleId != null ? $"ConsoleId: {consoleId}" : "" + name != null ? $"Name: {name}" : "");
+                m_core.FeedbackMgr.UpdateStatus("Failed to find plugin" + (guid != null ? $"Guid: {guid}" : consoleId != null ? $"ConsoleId: {consoleId}" : name != null ? $"Name: {name}" : ""));
                 return;
             }
 
@@ -114,6 +157,13 @@ namespace EpgMgr
             m_loadedPlugins.Add(new PluginEntry(plugin.GetType(), plugin.Name, plugin));
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="guid"></param>
+        /// <param name="consoleId"></param>
+        /// <param name="name"></param>
+        /// <exception cref="ArgumentException"></exception>
         public void DisablePlugin(string? guid, string? consoleId = null, string? name = null)
         {
             if (guid == name && consoleId == null && name == null)
@@ -126,8 +176,8 @@ namespace EpgMgr
                 row => guid != null ? row.Id.Equals(guid, StringComparison.InvariantCultureIgnoreCase) :
                     1 == 0 ||
                     consoleId != null ? row.ConsoleId.Equals(consoleId, StringComparison.CurrentCultureIgnoreCase) :
-                    1 == 0 ||
-                    name != null ? row.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase) : 1 == 0);
+                    (1 == 0 ||
+                     name != null) && row.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
 
             if (pluginConfig == null)
             {
@@ -178,6 +228,9 @@ namespace EpgMgr
                 ).FirstOrDefault(thisPlugin => thisPlugin != null);
         }
 
+        /// <summary>
+        /// Return an array of loaded plugin names
+        /// </summary>
         public string[] PluginNames => m_loadedPlugins.Select(row => row.PluginObj.Name).ToArray();
     }
 }

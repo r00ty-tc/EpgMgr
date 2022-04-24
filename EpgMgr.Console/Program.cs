@@ -56,6 +56,7 @@ if (useConsole)
     }
 }
 
+core.Dispose();
 System.Environment.Exit(0);
 
 bool ProcessArgs(List<string> args)
@@ -77,6 +78,7 @@ bool ProcessArgs(List<string> args)
                 if (file == null)
                 {
                     ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Invalid parameter. -file requires filename parameter");
+                    core.Dispose();
                     Environment.Exit(1);
                 }
 
@@ -84,6 +86,7 @@ bool ProcessArgs(List<string> args)
                 if (info.Directory is { Exists: true })
                 {
                     ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Folder for {file} doesn't exist");
+                    core.Dispose();
                     Environment.Exit(1);
                 }
 
@@ -99,10 +102,12 @@ bool ProcessArgs(List<string> args)
             case "-help":
             case "-?":
                 ConsoleControl.WriteLine("Usage: Console [-file <filename>] [-run]. No arguments will start the console -file will set the xmltv filename to use and -run will bypass console and create an xmltv file");
+                core.Dispose();
                 Environment.Exit(0);
                 break;
             default:
                 ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Invalid argument {arg}");
+                core.Dispose();
                 Environment.Exit(1);
                 break;
         }

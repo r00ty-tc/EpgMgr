@@ -4,20 +4,33 @@ using EpgMgr.Plugins;
 namespace EpgMgr
 {
 
+    /// <summary>
+    /// CommandManager: Helper object to help handle console commands
+    /// </summary>
     public class CommandManager
     {
         private readonly Core m_core;
         private static readonly string[] primitives = { "cd", "ls", "dir", "exit", "quit", "save", "reload", "run", "?" };
         private List<CommandReference> GlobalCommands = null!;
         private Dictionary<FolderEntry, List<CommandReference>> LocalCommands = null!;
+        /// <summary>
+        /// Defines the context object that represents the absolute root / folder.
+        /// </summary>
         public FolderEntry RootFolder { get; private set; } = null!;
 
+        /// <summary>
+        /// Initialize Command Manager. Requires reference to core object
+        /// </summary>
+        /// <param name="core"></param>
         public CommandManager(Core core)
         {
             m_core = core;
             RefreshPlugins();
         }
 
+        /// <summary>
+        /// Refresh local data with latest information. Mainly used to handle loading/unloading of plugins to refresh folder and command structure
+        /// </summary>
         public void RefreshPlugins()
         {
             // Run when plugins added/removed to update console layout
@@ -54,6 +67,17 @@ namespace EpgMgr
             }
         }
 
+        /// <summary>
+        /// Registers a command with the associated callback. If context is omitted it will be a global command, if context is provided it will only be valid from that folder in console
+        /// </summary>
+        /// <param name="commandString"></param>
+        /// <param name="method"></param>
+        /// <param name="usage"></param>
+        /// <param name="plugin"></param>
+        /// <param name="context"></param>
+        /// <param name="requiredArgs"></param>
+        /// <exception cref="Exception"></exception>
+        /// <exception cref="DataException"></exception>
         public void RegisterCommand(string commandString, CommandMethodHandler method, string? usage = null,
             Plugin? plugin = null, FolderEntry? context = null, int? requiredArgs = null)
         {
@@ -135,6 +159,12 @@ namespace EpgMgr
             return result.ToArray();
         }
 
+        /// <summary>
+        /// Handles an incoming command. It will call the apropriate handler and return the result
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="command"></param>
+        /// <returns></returns>
         public string HandleCommand(ref FolderEntry context, string command)
         {
             context ??= RootFolder;
@@ -173,6 +203,12 @@ namespace EpgMgr
             return commands.ToArray();
         }
 
+        /// <summary>
+        /// Attempts to change folder to the specified folder string. On failure the original folder it retained. Otherwise the context reference will point to the new folder.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="newFolder"></param>
+        /// <returns></returns>
         public bool ValidateChangeFolder(ref FolderEntry context, string newFolder)
         {
             var tempContext = context;
