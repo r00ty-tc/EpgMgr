@@ -165,8 +165,11 @@ namespace EpgMgr
 
             foreach (var child in ChildFolders)
             {
+                if (child.FolderPath.Equals(path, StringComparison.CurrentCultureIgnoreCase))
+                    return child;
+
                 if (child.ChildFolders.Any())
-                    child.FindEntryByPath(path);
+                    return child.FindEntryByPath(path);
             }
 
             return null;

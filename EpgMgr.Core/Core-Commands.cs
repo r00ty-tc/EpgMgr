@@ -23,11 +23,12 @@ namespace EpgMgr
             // Register local commands
 
             // plugin config
-            var coreConfigContext = mgr.RootFolder.FindEntryByPath("config/core");
+            var coreConfigContext = mgr.RootFolder.FindEntryByPath("/config/core");
             mgr.RegisterCommand("plugin", CommandHandlerConfigPLUGIN, "", null, coreConfigContext);
 
             // xmltv config
-            var xmlTvContext = mgr.RootFolder.FindEntryByPath("config/core/xmltv");
+            var xmlTvContext = mgr.RootFolder.FindEntryByPath("/config/core/xmltv");
+            mgr.RegisterCommand("timezone", CommandHandlerXMLTVTIMEZONE, $"timezone: Lists available timezones, shows current timezone or sets timezone to be used in xmltv files{Environment.NewLine}Usage timezone list [searchterm] / timezone show / timezone set <zoneid>", null, xmlTvContext);
         }
 
         private static string CommandHandlerConfigPLUGIN(Core core, ref FolderEntry context, string command, string[] args)
@@ -277,6 +278,55 @@ namespace EpgMgr
             var cmdInfo = cmds.FirstOrDefault(row =>
                 row.CommandString.Equals(args[0], StringComparison.InvariantCultureIgnoreCase));
             return cmdInfo != null && cmdInfo.UsageText != null ? cmdInfo.UsageText : "Invalid Argument";
+        }
+
+        internal static string CommandHandlerXMLTVTIMEZONE(Core core, ref FolderEntry context, string command, string[] args)
+        {
+            if (args.Length < 1)
+                return $"{ConsoleControl.ErrorColour}Invalid arguments. Try help timezone";
+
+            var timezones = Core.GetTimezones();
+            switch (args[0].ToLower())
+            {
+                case "list":
+                {
+                    if (args.Length > 2)
+                        return $"{ConsoleControl.ErrorColour}Invalid arguments. Try timezone list";
+
+                    if (timezones.Length == 0)
+                        return "No timezones found";
+
+                    var result = $"Available timezones{Environment.NewLine}";
+                    if (args.Length == 2)
+                        result += string.Join(Environment.NewLine, timezones.Where(row => row.Contains(args[1], StringComparison.InvariantCultureIgnoreCase))) + Environment.NewLine;
+                    else
+                        result += string.Join(Environment.NewLine, timezones)+Environment.NewLine;
+
+                    return result;
+                }
+                case "show":
+                {
+                    if (args.Length != 1)
+                        return $"{ConsoleControl.ErrorColour}Invalid arguments. Try timezone show";
+
+                    return $"Current Timezone: {core.Config.XmlTvConfig.TimeZone}";
+                }
+                case "set":
+                {
+                    if (args.Length != 2)
+                        return $"{ConsoleControl.ErrorColour}Invalid arguments. Try timezone set <timezone>";
+
+                    var zone = timezones.FirstOrDefault(row =>
+                        row.Equals(args[1], StringComparison.InvariantCultureIgnoreCase));
+
+                    if (zone == null)
+                        return $"{ConsoleControl.ErrorColour}Timezone {args[1]} not found in database. Try timezone list to find valid values";
+
+                    core.Config.XmlTvConfig.TimeZone = zone;
+                    return $"Set the current timezone to {ConsoleControl.SetFG(ConsoleColor.Green)}{zone}";
+                }
+            }
+            return "";
         }
 
         internal static dynamic? ParseValue(dynamic? value, ValueType type)

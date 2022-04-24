@@ -123,11 +123,11 @@ namespace EpgMgr.Plugins
         [JsonPropertyName("st")]
         public long? start { get; set; }
         [JsonIgnore]
-        public DateTimeOffset? StartTime => SkyUK.ConvertFromUnixTime(start ?? 0);
+        public DateTime? StartTime => Core.ConvertFromUnixTimeUTC(start ?? 0);
         [JsonPropertyName("d")]
         public long? duration { get; set; }
         [JsonIgnore]
-        public DateTimeOffset? EndTime => SkyUK.ConvertFromUnixTime((start ?? 0) + (duration ?? 0));
+        public DateTime? EndTime => Core.ConvertFromUnixTimeUTC((start ?? 0) + (duration ?? 0));
 
         [JsonPropertyName("eid")]
         public string? EpisodeId { get; set; }

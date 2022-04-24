@@ -20,6 +20,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NodaTime" Version="3.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\EpgMgr.XmlTV\EpgMgr.XmlTV.csproj" />
   </ItemGroup>
 

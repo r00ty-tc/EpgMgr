@@ -1,4 +1,6 @@
 ﻿using System.Xml.Serialization;
+using NodaTime;
+using NodaTime.TimeZones;
 
 namespace EpgMgr
 {
@@ -141,7 +143,8 @@ namespace EpgMgr
                 IncludeProgrammeReviews = true,
                 Filename = "Default-Guide.xml",
                 MaxDaysBehind = 1,
-                MaxDaysAhead = 5
+                MaxDaysAhead = 5,
+                TimeZone = Core.GetLocalTimezone()
             };
             ChannelNameToAlias = new Dictionary<string, string>();
             ChannelAliasToName = new Dictionary<string, string>();
@@ -188,6 +191,8 @@ namespace EpgMgr
             IncludeProgrammeImages = false;
             MaxDaysAhead = 5;
             MaxDaysBehind = 1;
+            // Local timezone ID by default
+            TimeZone = Core.GetLocalTimezone();
         }
 
         /// <summary>
@@ -241,6 +246,11 @@ namespace EpgMgr
         /// </summary>
         [XmlAttribute] 
         public int MaxDaysBehind { get; set; }
+        /// <summary>
+        /// Time zone to be used when creating the XMLTV file. Uses Noda (IANA) timezone name
+        /// </summary>
+        [XmlAttribute]
+        public string TimeZone { get; set; }
     }
     /// <summary>
     /// Configuration Value type. Specifies the standard type for the value in this field

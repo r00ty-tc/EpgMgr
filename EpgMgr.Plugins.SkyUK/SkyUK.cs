@@ -19,7 +19,6 @@ namespace EpgMgr.Plugins
             "https://www.sky.com/watch/assets/pages-app-tv-guide-index-js.81a2d554690a593fed3d.js";
 
         internal const string DEFAULT_REGION = "4101-1";    // London HD
-        internal static readonly TimeSpan TIMEZONE = new(1,0,0);
         public override Guid Id => Guid.Parse("17EC20A0-D302-4A42-BD10-23E5F08EDBAA");
         public override string Version => Assembly.GetExecutingAssembly().GetName().Version!.ToString();
         public override string Name => "Sky UK";
@@ -56,7 +55,7 @@ namespace EpgMgr.Plugins
             }
             m_core.FeedbackMgr.UpdateStatus("Done loading from API");
 
-            var totalPrograms = programmeList.Sum(epg => epg.Schedules.Sum(schedule => schedule.Programmes?.Length));
+            var totalPrograms = programmeList.Sum(epg => epg.Schedules.Sum(schedule => schedule.Programmes.Length));
             var currentProgram = 0;
 
             m_core.FeedbackMgr.UpdateStatus("Updating programmes", 0, totalPrograms);
@@ -64,27 +63,28 @@ namespace EpgMgr.Plugins
             {
                 foreach (var schedule in epg.Schedules)
                 {
-                    var channel = skyChannels?.FirstOrDefault(row => row.Sid != null && row.Sid.Equals(schedule.Sid));
+                    var channel = skyChannels?.FirstOrDefault(row => row.Sid.Equals(schedule.Sid));
                     if (channel == null)
                     {
                         errors.AddError($"Channel {schedule.Sid} was not found");
                     }
                     else
                     {
-                        if (schedule.Programmes == null) continue;
                         foreach (var programme in schedule.Programmes)
                         {
                             if (!programme.StartTime.HasValue)
                                 continue;
 
+                            var localStartTime = m_core.ConvertFromUTCToTimezone(programme.StartTime.Value);
+                            DateTimeOffset? localEndTime = programme.EndTime.HasValue ? m_core.ConvertFromUTCToTimezone(programme.EndTime.Value) : null;
                             // Remove overlapping program(s)
-                            if (programme.EndTime.HasValue)
-                                xmltv.DeleteOverlaps(programme.StartTime.Value, programme.EndTime.Value, m_core.GetAliasFromChannelName(channel.ChannelName)!);
+                            if (localEndTime.HasValue)
+                                xmltv.DeleteOverlaps(localStartTime, localEndTime.Value, m_core.GetAliasFromChannelName(channel.ChannelName)!);
 
                             // Generate new XMLTV programme
-                            var xmltvProgramme = xmltv.GetNewProgramme(programme.StartTime.Value, m_core.GetAliasFromChannelName(channel.ChannelName)!,
+                            var xmltvProgramme = xmltv.GetNewProgramme(localStartTime, m_core.GetAliasFromChannelName(channel.ChannelName)!,
                                 programme.Title ?? string.Empty,
-                                programme.EndTime, null, programme.Synopsis, null, null, "en", null, "en");
+                                localEndTime, null, programme.Synopsis, null, null, "en", null, "en");
 
                             // Add episode info if present
                             if (programme.SeasonNo > 0 && programme.EpisodeNo > 0)
@@ -173,8 +173,7 @@ namespace EpgMgr.Plugins
 
         protected IEnumerable<SkyChannel> GetApiChannels()
         {
-            var regionId = configRoot.GetValue<string>("SkyRegion");
-            if (regionId == null) regionId = DEFAULT_REGION;
+            var regionId = configRoot.GetValue<string>("SkyRegion") ?? DEFAULT_REGION;
             var region = configRoot.GetList<SkyRegion>("SkyRegions")?.FirstOrDefault(row => row.RegionId.Equals(regionId));
             if (region == null)
             {
@@ -188,7 +187,7 @@ namespace EpgMgr.Plugins
 
             var channels = m_web.GetJSON<SkyChannels>(API_CHANNEL_PREFIX + $"{region.Bouquet}/{region.SubBouquet}") ?? new SkyChannels();
             if (channels.Channels != null)
-                configRoot.SetList<SkyChannel>("ChannelsAvailable", channels.Channels.ToList());
+                configRoot.SetList("ChannelsAvailable", channels.Channels.ToList());
 
             return channels.Channels ?? Array.Empty<SkyChannel>();
         }
@@ -198,6 +197,7 @@ namespace EpgMgr.Plugins
             var newChannels = new List<SkyChannel>();
             foreach (var arg in rangeArgs)
             {
+                var skyChannels = channels.ToArray(); // channels as SkyChannel[] ?? channels.ToArray();
                 if (arg.Contains("-"))
                 {
                     // No spaces
@@ -207,12 +207,12 @@ namespace EpgMgr.Plugins
                     {
                         m_core.FeedbackMgr.UpdateStatus($"Invalid range value {arg}");
                     }
-                    newChannels.AddRange(channels.Where(row => string.Compare(row.ChannelNo, ranges[0], StringComparison.InvariantCultureIgnoreCase) >= 0 && string.Compare(row.ChannelNo, ranges[1], StringComparison.CurrentCultureIgnoreCase) <= 0));
+                    newChannels.AddRange(skyChannels.Where(row => string.Compare(row.ChannelNo, ranges[0], StringComparison.InvariantCultureIgnoreCase) >= 0 && string.Compare(row.ChannelNo, ranges[1], StringComparison.CurrentCultureIgnoreCase) <= 0));
                 }
                 else
                 {
-                    var thisChannel = channels.FirstOrDefault(row =>
-                        row.ChannelNo != null && row.ChannelNo.Equals(arg, StringComparison.InvariantCultureIgnoreCase));
+                    var thisChannel = skyChannels.FirstOrDefault(row =>
+                        row.ChannelNo.Equals(arg, StringComparison.InvariantCultureIgnoreCase));
                     if (thisChannel != null)
                         newChannels.Add(thisChannel);
                 }
@@ -225,8 +225,7 @@ namespace EpgMgr.Plugins
             if (channels.Length > 20)
                 throw new Exception("Too many channels");
 
-            if (date == null)
-                date = DateTime.Today;
+            date ??= DateTime.Today;
             var uri = API_PROGRAMME_PREFIX + date.Value.ToString("yyyyMMdd") + "/" + string.Join(",", channels.Select(row => row.Sid));
             var programmes = m_web.GetJSON<SkyEpgList>(uri);
             return programmes ?? new SkyEpgList();
@@ -296,14 +295,13 @@ namespace EpgMgr.Plugins
                 var resultString = genreDataString.Groups[1].Value;
                 resultString = resultString.Replace("{text:\"HD Channels\",value:\"HD\"},", "").Replace("{text:\"All Channels\",value:0},", "").Replace("text:", "\"text\":").Replace("value:", "\"value\":");
                 var genres = JsonSerializer.Deserialize<IEnumerable<SkyServiceGenre>>(resultString);
-                if (genres != null && genres.Any())
+                var skyServiceGenres = genres?.ToList();
+                if (skyServiceGenres != null && skyServiceGenres.Any())
                 {
-                    configRoot.SetList("SkyServiceGenres", genres.ToList());
-                    m_core.FeedbackMgr.UpdateStatus($"Loaded {genres.Count()} Service Genres");
+                    configRoot.SetList("SkyServiceGenres", skyServiceGenres.ToList());
+                    m_core.FeedbackMgr.UpdateStatus($"Loaded {skyServiceGenres.Count()} Service Genres");
                 }
             }
         }
-
-        internal static DateTimeOffset ConvertFromUnixTime(long timeStamp) => new DateTimeOffset(1970, 1, 1, 0, 0, 0, 0, TIMEZONE).AddSeconds(timeStamp);
     }
 }

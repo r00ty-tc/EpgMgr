@@ -24,7 +24,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EpgMgr.XmlTV", "EpgMgr.XmlT
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EpgMgr.Plugins.DemoPlugin", "EpgMgr.Plugins.DemoPlugin\EpgMgr.Plugins.DemoPlugin.csproj", "{607A9C92-455D-403F-BE5C-3B271BB674BD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpgMgr.Plugins.SkyUK", "EpgMgr.Plugins.SkyUK\EpgMgr.Plugins.SkyUK.csproj", "{40F93EB4-DD1C-4FC2-90B3-76F2574F8EF0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EpgMgr.Plugins.SkyUK", "EpgMgr.Plugins.SkyUK\EpgMgr.Plugins.SkyUK.csproj", "{40F93EB4-DD1C-4FC2-90B3-76F2574F8EF0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

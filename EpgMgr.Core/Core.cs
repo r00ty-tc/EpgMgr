@@ -2,6 +2,8 @@
 using System.Xml;
 using System.Xml.Serialization;
 using EpgMgr.Plugins;
+using NodaTime;
+using NodaTime.TimeZones;
 
 namespace EpgMgr
 {
@@ -283,5 +285,57 @@ namespace EpgMgr
         {
             FeedbackMgr.Dispose();
         }
+
+        /// <summary>
+        /// Return a list of valid timezones
+        /// </summary>
+        /// <returns></returns>
+        public static string[] GetTimezones() => DateTimeZoneProviders.Tzdb.Ids.ToArray();
+
+        /// <summary>
+        /// Return local timezone if possible, otherwise UTC
+        /// </summary>
+        /// <returns></returns>
+        public static string GetLocalTimezone()
+        {
+            try
+            {
+                return DateTimeZoneProviders.Tzdb.GetSystemDefault().Id;
+            }
+            catch
+            {
+                return "Etc/UTC";
+            }
+        }
+        /// <summary>
+        /// Convert unix time (seconds since 01/01/1970) to UTC DateTime
+        /// </summary>
+        /// <param name="timeStamp"></param>
+        /// <returns></returns>
+        public static DateTime ConvertFromUnixTimeUTC(long timeStamp) => new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timeStamp);
+
+        /// <summary>
+        /// Static method to convert a UTC time to a specified timezone
+        /// </summary>
+        /// <param name="utcDateTime"></param>
+        /// <param name="zoneId"></param>
+        /// <returns></returns>
+        /// <exception cref="DateTimeZoneNotFoundException"></exception>
+        public static DateTimeOffset ConvertFromUTCToTimezone(DateTime utcDateTime, string zoneId)
+        {
+            var zone = DateTimeZoneProviders.Tzdb.GetZoneOrNull(zoneId);
+            if (zone == null)
+                throw new DateTimeZoneNotFoundException($"Invalid time zone {zoneId}");
+            var zoneTime = new ZonedDateTime(Instant.FromDateTimeUtc(utcDateTime), zone);
+            return zoneTime.ToDateTimeOffset();
+        }
+
+        /// <summary>
+        /// Convert a specified UTC time to the timezone configured for XmlTV files
+        /// </summary>
+        /// <param name="utcDateTime"></param>
+        /// <returns></returns>
+        public DateTimeOffset ConvertFromUTCToTimezone(DateTime utcDateTime) => ConvertFromUTCToTimezone(utcDateTime, Config.XmlTvConfig.TimeZone);
+
     }
 }
