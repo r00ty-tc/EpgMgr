@@ -19,6 +19,7 @@ namespace EpgMgr.Plugins
             "https://www.sky.com/watch/assets/pages-app-tv-guide-index-js.81a2d554690a593fed3d.js";
 
         internal const string DEFAULT_REGION = "4101-1";    // London HD
+        internal static readonly TimeSpan TIMEZONE = new(1,0,0);
         public override Guid Id => Guid.Parse("17EC20A0-D302-4A42-BD10-23E5F08EDBAA");
         public override string Version => Assembly.GetExecutingAssembly().GetName().Version!.ToString();
         public override string Name => "Sky UK";
@@ -303,6 +304,6 @@ namespace EpgMgr.Plugins
             }
         }
 
-        internal static DateTimeOffset ConvertFromUnixTime(long timeStamp) => new DateTimeOffset(1970, 1, 1, 0, 0, 0, 0, new TimeSpan(0, 1, 0, 0)).AddSeconds(timeStamp);
+        internal static DateTimeOffset ConvertFromUnixTime(long timeStamp) => new DateTimeOffset(1970, 1, 1, 0, 0, 0, 0, TIMEZONE).AddSeconds(timeStamp);
     }
 }

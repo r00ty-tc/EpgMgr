@@ -121,7 +121,7 @@ namespace EpgMgr.Plugins
 
                     if (!string.IsNullOrWhiteSpace(searchString))
                         channels = channels.Where(row =>
-                                row.ChannelName != null && row.ChannelName.Contains(searchString, StringComparison.InvariantCultureIgnoreCase))
+                                row.ChannelName.Contains(searchString, StringComparison.InvariantCultureIgnoreCase))
                             .ToList();
                     var result = "Number Name                      Type" + Environment.NewLine;
                     foreach (var channel in channels)
