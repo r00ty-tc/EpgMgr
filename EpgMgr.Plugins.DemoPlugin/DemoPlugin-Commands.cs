@@ -1,5 +1,4 @@
-﻿using EpgMgr.XmlTV;
-
+﻿
 namespace EpgMgr.Plugins
 {
     public partial class DemoPlugin
@@ -7,97 +6,82 @@ namespace EpgMgr.Plugins
         public void RegisterCommands(FolderEntry folderEntry)
         {
             // Custom global commands
-            m_core.CommandMgr.RegisterCommand("progresstest", CommandHandlerPROGRESSTEST, null, this);
-            m_core.CommandMgr.RegisterCommand("xmltv", CommandHandlerXMLTV, $"xmltv: Test command for xmltv class development{Environment.NewLine}Usage: xmltv [load] [test]",this, null, 1);
 
             // Custom local commands
-            m_core.CommandMgr.RegisterCommand("listchannels", CommandHandlerLISTCHANNELS, $"Lists channels enabled or available{Environment.NewLine}Usage: listchannels [all]",this, folderEntry);
+            m_core.CommandMgr.RegisterCommand("channel", CommandHandlerCHANNEL, $"Perform channel operations (list, add, remove){Environment.NewLine}Usage: channel list [all] / channel add <ID> / chanel remove <ID>",this, folderEntry);
         }
 
-        public static string CommandHandlerPROGRESSTEST(Core core, ref FolderEntry context, string command, string[] args)
-        {
-            // Progress bar test
-            core.FeedbackMgr.UpdateStatus("Progress bar test",0,250);
-            for (var i = 0; i <= 250; i++)
-            {
-                core.FeedbackMgr.UpdateStatus(null, i);
-                Thread.Sleep(10);
-            }
-            core.FeedbackMgr.UpdateStatus("Progress complete");
-            return "Hello World";
-        }
-
-        public static string CommandHandlerXMLTV(Core core, ref FolderEntry context, string command,
-            string[] args)
+        public string CommandHandlerCHANNEL(Core core, ref FolderEntry context, string command, string[] args)
         {
             if (args.Length < 1)
-                return "Invalid arguments. Try xmltv load <file> or xmltv test";
+                return $"{ConsoleControl.ErrorColour}Invalid arguments, try help channel";
 
-            // TEST: Load existing config 
-            if (args[0].Equals("load", StringComparison.InvariantCultureIgnoreCase))
+            switch (args[0])
             {
-                if (args.Length != 2)
-                    return "xmltv load requires a filename as argument";
+                case "list":
+                {
+                    if (args.Length > 2 || (args.Length == 2 && !args[1]!.Equals("all")))
+                        return $"{ConsoleControl.ErrorColour}Invalid arguments, try channel list [all].";
 
-                if (!File.Exists(args[1]))
-                    return $"{args[1]}: File not found";
+                    var allMode = args.Length == 2 && args[1].Equals("all", StringComparison.InvariantCultureIgnoreCase);
 
-                var startTime = DateTime.UtcNow.Ticks;
-                var test = XmlTV.XmlTV.Load(args[1]);
-                var endTime = DateTime.UtcNow.Ticks;
-                var diff = new TimeSpan(endTime - startTime);
-                return $"Loaded {args[1]} in {diff.TotalMilliseconds}ms";
+                    string result;
+                    if (!allMode)
+                    {
+                        result = "Subscribed Channels:" + Environment.NewLine;
+                        result = (configRoot.GetList<Channel>("ChannelsSubbed") ??
+                                  new List<Channel>()).Aggregate(result, (current, channel) => current + ($"{channel.Id,-10}{channel.Name,-25}" + Environment.NewLine));
+                    }
+                    else
+                    {
+                        result = "All Channels:" + Environment.NewLine;
+                        result = (configRoot.GetList<Channel>("ChannelsAvailable") ??
+                                  new List<Channel>()).Aggregate(result, (current, channel) => current + ($"{channel.Id,-10}{channel.Name,-25}" + Environment.NewLine));
+                    }
+
+                    return result;
+                }
+                case "add":
+                {
+                    if (args.Length != 2)
+                        return $"{ConsoleControl.ErrorColour}Invalid arguments, try channel add <channelId>";
+
+                    // Get channel (and lists for subbed/available channels)
+                    var channelsSubbed = configRoot.GetList<Channel>("ChannelsSubbed") ?? new List<Channel>();
+                    var channelsAvailable = configRoot.GetList<Channel>("ChannelsAvailable");
+                    var channel = channelsAvailable?.FirstOrDefault(row =>
+                        row.Id.Equals(args[1], StringComparison.InvariantCultureIgnoreCase));
+
+                    // If not found, error
+                    if (channel == null)
+                        return $"{ConsoleControl.ErrorColour}Channel {args[1]} not found";
+
+                    // Add the channel and return result to user
+                    channelsSubbed.Add(channel);
+                    configRoot.SetList("ChannelsSubbed", channelsSubbed);
+
+                    return $"Added {channel.Id} ({channel.Name}) to active channels";
+                }
+                case "remove":
+                {
+                    if (args.Length != 2)
+                        return $"{ConsoleControl.ErrorColour}Invalid arguments, try channel remove <channelId>";
+
+                    // Get channel (and lists for subbed/available channels)
+                    var channelsSubbed = configRoot.GetList<Channel>("ChannelsSubbed") ?? new List<Channel>();
+                    var channel = channelsSubbed.FirstOrDefault(row =>
+                        row.Id.Equals(args[1], StringComparison.InvariantCultureIgnoreCase));
+
+                    if (channel == null)
+                        return $"{ConsoleControl.ErrorColour}Channel {args[1]} not found in active channel list";
+
+                    channelsSubbed.Remove(channel);
+                    configRoot.SetList("ChannelsSubbed", channelsSubbed);
+                    return $"Removed {channel.Id} ({channel.Name}) from active channels";
+                }
+                default:
+                    return $"{ConsoleControl.ErrorColour}Invalid arguments, try help channel";
             }
-
-            if (args[0].Equals("test", StringComparison.InvariantCultureIgnoreCase))
-            {
-                var fileName = args.Length == 2 ? args[1] : "xmltvtest.xml";
-                var xmltv = new XmlTV.XmlTV(DateTime.Now, "Demo test", null, "EpgMgr/Demo", null);
-                var channel = xmltv.GetNewChannel("BBC1", "BBC One", "en", "http://icon.com", null, null, "http://example.com");
-                channel.AddDisplayName("Test german name", "de");
-                channel.AddDisplayName("Test french name", "fr");
-                channel.AddIcon("http://logo.com/logo1.png", 100, 120);
-                channel.AddUrl("http://nowhere.com", "test");
-                var programme = xmltv.GetNewProgramme(DateTime.Now, channel.Id, "The test programme", DateTime.Now.AddHours(1),
-                    "The revenge", null, "English", "Drama", "en", "en", null, "en");
-                programme.AddIcon("http://icons.com", 150, 200);
-                programme.AddEpisodeNum("S01E02");
-                programme.AddSubtitleInfo("teletext");
-                programme.AddCredit(CreditType.CreditDirector, "Steven Spielberg", new Image("http://images.com/spielberg"), new XmlTvUrl("http://spielberg.com"));
-                programme.AddActor("Harold Lloyd", "Johnny boy", "yes");
-                programme.AddActor("John Smith", "Ratfield", null, null, new XmlTvUrl("http://imdb.com/johnsmith", "imdb"));
-                xmltv.Save(fileName);
-                var test = XmlTV.XmlTV.Load(fileName);
-                return File.Exists(fileName) ?
-                    $"Created file {fileName} with {new FileInfo(fileName).Length}" :
-                    $"Failed to write file {fileName}";
-            }
-
-            return "Invalid command";
-        }
-
-        public string CommandHandlerLISTCHANNELS(Core core, ref FolderEntry context, string command, string[] args)
-        {
-            if (args.Length > 1 || (args.Length == 1 && !args.FirstOrDefault()!.Equals("all")))
-                return "Invalid arguments. Use listchannels [all].";
-
-            var allMode = args.FirstOrDefault()!.Equals("all", StringComparison.InvariantCultureIgnoreCase);
-
-            var result = string.Empty;
-            if (!allMode)
-            {
-                result = "Subscribed Channels:" + Environment.NewLine;
-                result = (configRoot.GetList<Channel>("ChannelsSubbed") ?? 
-                          new List<Channel>()).Aggregate(result, (current, channel) => current + ($"{channel.Id,-10}{channel.Name,-25}" + Environment.NewLine));
-            }
-            else
-            {
-                result = "All Channels:" + Environment.NewLine;
-                result = (configRoot.GetList<Channel>("ChannelsAvailable") ?? 
-                          new List<Channel>()).Aggregate(result, (current, channel) => current + ($"{channel.Id,-10}{channel.Name,-25}" + Environment.NewLine));
-            }
-
-            return result;
         }
     }
 }

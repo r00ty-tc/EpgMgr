@@ -193,9 +193,8 @@ namespace EpgMgr
 
             // Update programs from plugins
             foreach (var plugin in PluginMgr.LoadedPlugins)
-            {
                 plugin.PluginObj.GenerateXmlTv(ref xmltvFile);
-            }
+
             FeedbackMgr.UpdateStatus("Saving XMLTV");
             xmltvFile.Save(Config.XmlTvConfig.Filename);
             var info = new FileInfo(Config.XmlTvConfig.Filename);

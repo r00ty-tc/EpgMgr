@@ -14,17 +14,35 @@ namespace EpgMgr.Plugins
         public override EpgMgr.Channel[] GetXmlTvChannels()
         {
             var subbedChannels = configRoot.GetList<Channel>("ChannelsSubbed") ?? new List<Channel>();
-            var returnChannels = new List<EpgMgr.Channel>();
+            var channels = new List<EpgMgr.Channel>();
             foreach (var channel in subbedChannels)
-            {
-                returnChannels.Add(new EpgMgr.Channel(channel.Id, channel.Name, null, channel.LogoUrl));
-            }
-            return returnChannels.ToArray();
+                channels.Add(new EpgMgr.Channel(channel.Id, channel.Name, null, channel.LogoUrl));
+
+            return channels.ToArray();
         }
 
         public override PluginErrors GenerateXmlTv(ref XmlTV.XmlTV xmltv)
         {
-            return new PluginErrors();
+            var errors = new PluginErrors();
+            var subChannels = configRoot.GetList<Channel>("ChannelsSubbed") ?? new List<Channel>();
+            var xmltvChannelNames = GetXmlTvChannels().Select(row => row.Id);
+
+            // Remove all programs for today for our channels
+            var programmes = xmltv.Programmes.Where(row =>
+                xmltvChannelNames.Contains(row.Channel) && row.StartTime.Date.Equals(DateTime.Today)).ToArray();
+
+            foreach (var programme in programmes)
+                xmltv.DeleteProgramme(programme.StartTime, programme.Channel);
+
+            // Add some programmes for each channel
+            foreach (var channel in subChannels)
+            {
+                var startTime = DateTimeOffset.Now.Date.AddHours(13).AddMinutes(30);
+                var endTime = startTime.AddMinutes(30);
+                var programme = xmltv.GetNewProgramme(startTime, channel.Id, "The news", endTime, "The new programme");
+            }
+
+            return errors;
         }
 
         public override void RegisterConfigData(FolderEntry folderEntry)
@@ -60,9 +78,6 @@ namespace EpgMgr.Plugins
             allChannels.Add(new Channel("BBC2", "BBC Two"));
             allChannels.Add(new Channel("ITV", "ITV"));
             configRoot.SetList<Channel>("ChannelsAvailable", allChannels);
-            var bbc2 = allChannels.FirstOrDefault(row => row.Id.Equals("BBC2"));
-            if (bbc2 != null)
-                subChannels.Add(bbc2);
             configRoot.SetList<Channel>("ChannelsSubbed", subChannels);
         }
     }
