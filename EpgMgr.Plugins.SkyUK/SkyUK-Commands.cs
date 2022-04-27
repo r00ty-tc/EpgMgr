@@ -27,7 +27,7 @@ namespace EpgMgr.Plugins
                     LoadBlobData();
                     return "Reloaded static data";
                 default:
-                    return "Invalid argument. Try reload channels or reload data";
+                    return "Invalid argument. Try refresh channels or refresh data";
             }
         }
 

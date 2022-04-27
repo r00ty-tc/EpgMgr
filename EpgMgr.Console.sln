@@ -26,6 +26,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EpgMgr.Plugins.DemoPlugin",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EpgMgr.Plugins.SkyUK", "EpgMgr.Plugins.SkyUK\EpgMgr.Plugins.SkyUK.csproj", "{40F93EB4-DD1C-4FC2-90B3-76F2574F8EF0}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EpgMgr.Plugins.ProgramTV", "EpgMgr.Plugins.ProgramTV\EpgMgr.Plugins.ProgramTV.csproj", "{5B162C5B-E521-48CC-BA25-E9798A256797}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,12 @@ Global
 		{40F93EB4-DD1C-4FC2-90B3-76F2574F8EF0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{40F93EB4-DD1C-4FC2-90B3-76F2574F8EF0}.SignedRelease|Any CPU.ActiveCfg = Release|Any CPU
 		{40F93EB4-DD1C-4FC2-90B3-76F2574F8EF0}.SignedRelease|Any CPU.Build.0 = Release|Any CPU
+		{5B162C5B-E521-48CC-BA25-E9798A256797}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B162C5B-E521-48CC-BA25-E9798A256797}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B162C5B-E521-48CC-BA25-E9798A256797}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B162C5B-E521-48CC-BA25-E9798A256797}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B162C5B-E521-48CC-BA25-E9798A256797}.SignedRelease|Any CPU.ActiveCfg = SignedRelease|Any CPU
+		{5B162C5B-E521-48CC-BA25-E9798A256797}.SignedRelease|Any CPU.Build.0 = SignedRelease|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -73,6 +81,7 @@ Global
 		{985E84EE-D5AF-4A1C-95A8-ED639CC11555} = {89DB4290-8D94-41D4-ABCE-45A9DD55DDB8}
 		{607A9C92-455D-403F-BE5C-3B271BB674BD} = {0529DFE9-AD1B-460E-BB24-EB459B3A2B8E}
 		{40F93EB4-DD1C-4FC2-90B3-76F2574F8EF0} = {0529DFE9-AD1B-460E-BB24-EB459B3A2B8E}
+		{5B162C5B-E521-48CC-BA25-E9798A256797} = {0529DFE9-AD1B-460E-BB24-EB459B3A2B8E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A70A5DE3-C3F8-4425-AA59-18C17FFF5B39}

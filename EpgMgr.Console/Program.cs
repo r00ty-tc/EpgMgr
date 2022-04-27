@@ -2,6 +2,7 @@
 
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using EpgMgr;
 using Console = System.Console;
 
@@ -39,6 +40,7 @@ var lastStatus = string.Empty;
 var progressMode = false;
 var core = new Core(UpdateFeedback);
 
+Console.OutputEncoding = Encoding.UTF8;
 var context = core.CommandMgr.RootFolder;
 ConsoleControl.WriteLine($"EpgMgr Console {Assembly.GetExecutingAssembly().GetName().Version}");
 var useConsole = true;

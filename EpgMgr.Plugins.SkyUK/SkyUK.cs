@@ -45,7 +45,7 @@ namespace EpgMgr.Plugins
             var skyChannels = configRoot.GetList<SkyChannel>("ChannelsSubbed");
             var totalLookups = (m_core.Config.XmlTvConfig.MaxDaysBehind + m_core.Config.XmlTvConfig.MaxDaysAhead + 1) * skyChannels?.Count;
             var lookupCount = 0;
-            m_core.FeedbackMgr.UpdateStatus("Loading programmes from API", 0, totalLookups);
+            m_core.FeedbackMgr.UpdateStatus("SkyUK: Loading programmes from API", 0, totalLookups);
             for (var date = DateTime.Today.AddDays(0 - m_core.Config.XmlTvConfig.MaxDaysBehind);
                  date <= DateTime.Today.AddDays(m_core.Config.XmlTvConfig.MaxDaysAhead);
                  date = date.AddDays(1))
@@ -53,12 +53,12 @@ namespace EpgMgr.Plugins
                 var todayProgrammes = GetAllProgrammes(ref lookupCount, date);
                 programmeList.AddRange(todayProgrammes);
             }
-            m_core.FeedbackMgr.UpdateStatus("Done loading from API");
+            m_core.FeedbackMgr.UpdateStatus("SkyUK: Done loading from API");
 
             var totalPrograms = programmeList.Sum(epg => epg.Schedules.Sum(schedule => schedule.Programmes.Length));
             var currentProgram = 0;
 
-            m_core.FeedbackMgr.UpdateStatus("Updating programmes", 0, totalPrograms);
+            m_core.FeedbackMgr.UpdateStatus("SkyUK: Updating programmes", 0, totalPrograms);
             foreach (var epg in programmeList)
             {
                 foreach (var schedule in epg.Schedules)
@@ -66,7 +66,7 @@ namespace EpgMgr.Plugins
                     var channel = skyChannels?.FirstOrDefault(row => row.Sid.Equals(schedule.Sid));
                     if (channel == null)
                     {
-                        errors.AddError($"Channel {schedule.Sid} was not found");
+                        errors.AddError($"SkyUK: Channel {schedule.Sid} was not found");
                     }
                     else
                     {
@@ -283,7 +283,7 @@ namespace EpgMgr.Plugins
                 if (regions != null && regions.Any())
                 {
                     configRoot.SetList("SkyRegions", regions.ToList());
-                    m_core.FeedbackMgr.UpdateStatus($"Loaded {regions.Count()} regions");
+                    m_core.FeedbackMgr.UpdateStatus($"SkyUK: Loaded {regions.Count()} regions");
                 }
             }
 
@@ -299,7 +299,7 @@ namespace EpgMgr.Plugins
                 if (skyServiceGenres != null && skyServiceGenres.Any())
                 {
                     configRoot.SetList("SkyServiceGenres", skyServiceGenres.ToList());
-                    m_core.FeedbackMgr.UpdateStatus($"Loaded {skyServiceGenres.Count()} Service Genres");
+                    m_core.FeedbackMgr.UpdateStatus($"SkyUK: Loaded {skyServiceGenres.Count()} Service Genres");
                 }
             }
         }
