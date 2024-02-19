@@ -11,6 +11,15 @@ namespace EpgMgr.Plugins
 {
     public partial class ProgramTV : Plugin
     {
+        private static readonly Regex channelRegex = new("\\<a href\\=\\\"(.*?)\\\".*?class\\=\\\"channellistentry\\\"\\>(.*?)\\<\\/a\\>", RegexOptions.Compiled);
+        private static readonly Regex programmeRegex = new Regex(
+            "\\<div class\\=\\\"smartpe_progentry smartpe_progentry_old\\\" itemscope itemtype\\=\\\"\\\" title\\=\\\".*?\\\"\\>\\s*?\\<div class\\=\\\"smartpe_progentryrow\\\" itemprop\\=\\\"location\\\" content\\=\\\"\\\"\\>\\s*?\\<div class\\=\\\"smartpe_progentrycell\\\"\\>\\s*?\\<div class\\=\\\"smartpe_progentry_intable top5\\\"\\>\\s*?\\<div class\\=\\\"smartpe_progentryrow\\\"\\>\\s*?\\<div class\\=\\\"smartpe_progentrycell\\\"\\>\\s*?\\<time class\\=\\\"smartpe_time smartpe_time_old\\\"\\s*?itemprop\\=\\\"startDate\\\"\\s*?content\\=\\\"(.*?)\\\"\\> .*?\\<\\/time\\>.*?\\<h3 class\\=\\\"smartpe_progtitle_common smartpe_progtitle\\\"\\s*?itemprop\\=\\\"\\\"\\>\\<a\\s*?id\\=\\\"(.*?)\\\"\\s*? href\\=\\\"(.*?)\\\"\\s*?target\\=\\\"_blank\\\"\\>(.*?)\\<\\/a\\>\\<\\/h3\\>.*?\\<div class\\=\\\"smartpe_progshortdesc\\\"\\s*?itemprop\\=\\\"\\\"\\>(.*?)\\<\\/div\\>.*?\\<div class\\=\\\"smartpe_progentrylong\\\"\\>(.*?)\\<\\/div\\>", RegexOptions.Singleline | RegexOptions.Compiled);
+        /*         "\\<div class\\=\\\"smartpe_progentry smartpe_progentry_old\\\" itemscope itemtype\\=\\\"\\\" title\\=\\\".*?\\\"\\>\\s*?\\<div class\\=\\\"smartpe_progentryrow\\\" " +
+                        "itemprop\\=\\\"location\\\" content\\=\\\"\\\"\\>\\s*?\\<div class\\=\\\"smartpe_progentrycell\\\"\\>\\s*?\\<div class\\=\\\"smartpe_progentry_intable top5\\\"\\>\\s*?\\" +
+                        "<div class\\=\\\"smartpe_progentryrow\\\"\\>\\s*?\\<div class\\=\\\"smartpe_progentrycell\\\"\\>\\s*?\\<time class\\=\\\"smartpe_time smartpe_time_old\\\"\\s*?itemprop\\=\\\"" +
+                        "startDate\\\"\\s*?content\\=\\\"(.*?)\\\"\\> .*?\\<\\/time\\>.*?\\<h3 class\\=\\\"smartpe_progtitle_common smartpe_progtitle\\\"\\s*?itemprop\\=\\\"\\\"\\>\\<a\\s*?id\\=\\\"(.*?)" +
+                        "\\\"\\s*? href\\=\\\"(.*?)\\\"\\s*?target\\=\\\"_blank\\\"\\>(.*?)\\<\\/a\\>\\<\\/h3\\>.*?\\<div class\\=\\\"smartpe_progshortdesc\\\"\\s*?itemprop\\=\\\"\\\"\\>(.*?)\\<\\/div\\>.*?\\" +
+                        "<div class\\=\\\"smartpe_progentrylong\\\"\\>(.*?)\\<\\/div\\>", RegexOptions.Singleline | RegexOptions.Compiled);*/
         public override Guid Id => Guid.Parse("F98C197E-821A-47FB-8AD5-75701B336F92");
         public override string Version => Assembly.GetExecutingAssembly().GetName().Version!.ToString();
         public override string Name => "Program TV (RO)";
@@ -129,8 +138,8 @@ namespace EpgMgr.Plugins
         private IEnumerable<Channel> getApiChannels()
         {
             var webData = m_web.WebGet("https://program-tv.net/");
-            var regex = new Regex("\\<a href\\=\\\"(.*?)\\\".*?class\\=\\\"channellistentry\\\"\\>(.*?)\\<\\/a\\>");
-            var matches = regex.Matches(webData);
+            //var regex = new Regex("\\<a href\\=\\\"(.*?)\\\".*?class\\=\\\"channellistentry\\\"\\>(.*?)\\<\\/a\\>");
+            var matches = channelRegex.Matches(webData);
             if (matches.Count == 0)
                 throw new DataException("Data returned no channel results");
 
