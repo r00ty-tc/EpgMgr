@@ -130,7 +130,7 @@ namespace EpgMgr.XmlTV
                 throw new Exception($"Channel {channel} not found");
 
             var programmes = channelRef.Programmes.Values.Where(row =>
-                ((row.StartTime >= startTime && row.StartTime < endTime) ||
+                (row.StartTime == startTime || (row.StartTime >= startTime && row.StartTime < endTime) ||
                 (row.StopTime > startTime && row.StopTime <= endTime))).ToArray();
 
             foreach (var programme in programmes)
@@ -141,7 +141,7 @@ namespace EpgMgr.XmlTV
         {
             // Main config save
             var xmltvXml = new XmlDocument();
-            var declaration = xmltvXml.CreateXmlDeclaration("1.0", "ISO-8859-1", null);
+            var declaration = xmltvXml.CreateXmlDeclaration("1.0", "utf-8", null);
             var rootNode = xmltvXml.DocumentElement;
             xmltvXml.InsertBefore(declaration, rootNode);
             using (var xmlWriter = xmltvXml.CreateNavigator()?.AppendChild())
