@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>SkyUK</AssemblyName>
@@ -23,6 +23,10 @@
 	</ItemGroup>
     <!--<Exec Command="mkdir $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins&#xD;&#xA;copy $(TargetPath) $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins\$(TargetFileName)" />-->
 	<Copy SourceFiles="@(PluginDll)" DestinationFolder="$(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins\" />
+  </Target>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy /y $(TargetPath) $(SolutionDir)\EpgMgr.Console\bin\$(Configuration)\net8.0\Plugins\" />
   </Target>
 
 </Project>
