@@ -186,7 +186,13 @@ namespace EpgMgr
                 return $"Invalid Arguments{Environment.NewLine}{validCommand.UsageText ?? string.Empty}{Environment.NewLine}";
 
             // Run command method and return result
-            var result = validCommand.Method(m_core, ref context, commandString, args) + Environment.NewLine;
+            var result = validCommand.Method(m_core, ref context, commandString, args);
+            if (result != null)
+                result += Environment.NewLine;
+
+            // If result is null, return usage
+            if (result is null)
+                return (validCommand.UsageText ?? "Invalid arguments") + Environment.NewLine;
 
             // Check context is still valid (mainly for when manipulating plugins). Should be a better way
             var tempContext = RootFolder;

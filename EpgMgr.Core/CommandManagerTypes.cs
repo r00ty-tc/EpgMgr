@@ -5,7 +5,7 @@ namespace EpgMgr
     /// <summary>
     /// Delegate for command handler methods.
     /// </summary>
-    public delegate string CommandMethodHandler(Core core, ref FolderEntry context, string command, string[] args);
+    public delegate string? CommandMethodHandler(Core core, ref FolderEntry context, string command, string[] args);
 
     /// <summary>
     /// Delegate for a method that will handle setting/getting values (for configuration). If value is null it will get a value, if not it will set the value

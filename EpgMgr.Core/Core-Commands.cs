@@ -19,29 +19,36 @@ namespace EpgMgr
             mgr.RegisterCommand("alias", CommandHandlerALIAS, $"alias: set/remove/show channel aliases. Note there is no validation here{Environment.NewLine}Usage: alias set <channelname> <aliasname> / remove <channelname> / show <channelname>/ list");
             mgr.RegisterCommand("?", CommandHandlerHELP, $"?: Shows either the list of commands, or if a command is provided as an argument, the usage info for the command{Environment.NewLine}Usage: ? [command]");
             mgr.RegisterCommand("help", CommandHandlerHELP, $"help: Shows either the list of commands, or if a command is provided as an argument, the usage info for the command{Environment.NewLine}Usage: help [command]");
+            mgr.RegisterCommand("plugin", CommandHandlerConfigPLUGIN, $"Manages plugins by listing, adding/removing plugins{Environment.NewLine}" +
+                $"Usage:{Environment.NewLine}" +
+                $"  plugin list [active] : Lists all plugins (if active specified, only lists those that are enabled). Enabled plugins shown in green{Environment.NewLine}" +
+                $"  plugin enable <plugin name> : Enables the plugin and initializes the configuration block{Environment.NewLine}" +
+                $"  plugin disable <plugin name> : Disabled the plugin");
 
             // Register local commands
 
-            // plugin config
             var coreConfigContext = mgr.RootFolder.FindEntryByPath("/config/core");
-            mgr.RegisterCommand("plugin", CommandHandlerConfigPLUGIN, "", null, coreConfigContext);
 
             // xmltv config
             var xmlTvContext = mgr.RootFolder.FindEntryByPath("/config/core/xmltv");
             mgr.RegisterCommand("timezone", CommandHandlerXMLTVTIMEZONE, $"timezone: Lists available timezones, shows current timezone or sets timezone to be used in xmltv files{Environment.NewLine}Usage timezone list [searchterm] / timezone show / timezone set <zoneid>", null, xmlTvContext);
         }
 
-        private static string CommandHandlerConfigPLUGIN(Core core, ref FolderEntry context, string command, string[] args)
+        private static string? CommandHandlerConfigPLUGIN(Core core, ref FolderEntry context, string command, string[] args)
         {
             if (args.Length < 1)
-                return "Invalid Arguments";
+                return null;
 
             switch (args[0].ToLower())
             {
                 case "list":
-                    var allMode = args.Length == 2 && args[1].Equals("all", StringComparison.InvariantCultureIgnoreCase);
+                    var enabledOnly = args.Length == 2 && args[1].Equals("active", StringComparison.InvariantCultureIgnoreCase);
                     List<Plugin> plugins;
-                    if (allMode)
+                    if (enabledOnly)
+                    {
+                        plugins = core.PluginMgr.LoadedPlugins.Select(row => row.PluginObj).ToList();
+                    }
+                    else
                     {
                         plugins = new List<Plugin>();
                         var pluginConfigs = core.GetAllPlugins();
@@ -57,13 +64,14 @@ namespace EpgMgr
                         }
                         core.FeedbackMgr.UpdateStatus("");
                     }
-                    else
-                    {
-                        plugins = core.PluginMgr.LoadedPlugins.Select(row => row.PluginObj).ToList();
-                    }
 
-                    return "Plugin Name              Version   Author                   Guid" + Environment.NewLine +
-                        string.Join(Environment.NewLine, plugins.Select(row => $"{row.ConsoleName,-25}{row.Version,-10}{row.Author,-25}{row.Id}"));
+                    var loadedPlugins = core.PluginMgr.LoadedPlugins.Select(row => row.PluginObj).ToList();
+                    return "Plugin Name              Version   Author                   Guid                                    Active" + Environment.NewLine +
+                        string.Join(Environment.NewLine, 
+                        plugins.Select(row => $"{(loadedPlugins.Select(row => row.Id).Contains(row.Id) 
+                            ? ConsoleControl.SetFG(ConsoleColor.Green) 
+                            : ConsoleControl.SetFG(ConsoleColor.White))}" +
+                        $"{row.ConsoleName,-25}{row.Version,-10}{row.Author,-25}{row.Id, -40}{(loadedPlugins.Select(row => row.Id).Contains(row.Id) ? "Yes" : "No")}")) + ConsoleControl.SetFG(ConsoleColor.White);
                 case "enable":
                     if (args.Length != 2)
                         return $"Invalid Arguments. Usage plugin enable <plugin guid or name>";

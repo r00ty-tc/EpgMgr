@@ -9,11 +9,24 @@ namespace EpgMgr.Plugins
             // Custom global commands
 
             // Custom local commands
-            m_core.CommandMgr.RegisterCommand("refresh", CommandHandlerREFRESH, $"Reload channels or static data from API{Environment.NewLine}Usage refresh channels / refresh data",
+            m_core.CommandMgr.RegisterCommand("refresh", CommandHandlerREFRESH, 
+                $"Reload channels or static data from API{Environment.NewLine}" +
+                $"Usage refresh channels / refresh data",
                 this, folderEntry, 1);
-            m_core.CommandMgr.RegisterCommand("channel", CommandHandlerCHANNEL, $"channel: Channel operations. add/remove/adjust alias for channel(s){Environment.NewLine}" +
-                $"Usage: channel add <channel/range> / remove <channel/range> / list [all] / alias set <channelNo> <newName> / alias remove <channelNo> / alias list", this, folderEntry);
-            m_core.CommandMgr.RegisterCommand("region", CommandHandlerREGION, $"region: Region operations. list/show/set region for API operations{Environment.NewLine}Usage: region list / show / set <regionid>", this, folderEntry);
+            m_core.CommandMgr.RegisterCommand("channel", CommandHandlerCHANNEL, 
+                $"channel: Channel operations. add/remove/adjust alias for channel(s){Environment.NewLine}" +
+                $"Usage: {Environment.NewLine}" +
+                $"  channel add <channel/range>{Environment.NewLine}" +
+                $"  channel remove <channel/range>{Environment.NewLine}" +
+                $"  channel list [active] [filter]{Environment.NewLine}" +
+                $"  channel alias set <channelNo> <newName>{Environment.NewLine}" +
+                $"  channel alias remove <channelNo>{Environment.NewLine}" +
+                $"  channel alias list", 
+                this, folderEntry);
+            m_core.CommandMgr.RegisterCommand("region", CommandHandlerREGION, 
+                $"region: Region operations. list/show/set region for API operations{Environment.NewLine}" +
+                $"Usage: region list / show / set <regionid>", 
+                this, folderEntry);
         }
 
         public string CommandHandlerREFRESH(Core core, ref FolderEntry context, string command, string[] args)
@@ -31,64 +44,88 @@ namespace EpgMgr.Plugins
             }
         }
 
-        public string CommandHandlerREGION(Core core, ref FolderEntry context, string command, string[] args)
+        public string? CommandHandlerREGION(Core core, ref FolderEntry context, string command, string[] args)
         {
             if (args.Length < 1)
-                return $"Invalid arguments. Need at least one argument. Use help region for details";
+                return null;
 
             var regions = configRoot.GetList<SkyRegion>("SkyRegions");
             switch (args[0].ToLower())
             {
                 case "list":
-                {
-                    if (args.Length != 1)
-                        return $"Invalid arguments. Usage: region list";
-
-                    var result = "ID         Region" + Environment.NewLine;
-                    if (regions == null || !regions.Any())
-                        return $"{ConsoleControl.ErrorColour}No regions found!";
-
-                    foreach (var region in regions)
-                        result += $"{region.RegionId,-10} {region.RegionName}{Environment.NewLine}";
-
-                    return result;
-                }
-                case "show":
-                {
-                    if (args.Length != 1)
-                        return $"Invalid arguments. Usage: region show";
-
-                    var region = configRoot.GetValue<string>("SkyRegion");
-                    if (string.IsNullOrWhiteSpace(region))
                     {
-                        configRoot.SetValue<string>("SkyRegion", DEFAULT_REGION);
-                        region = DEFAULT_REGION;
+                        if (args.Length != 1)
+                            return $"Invalid arguments. Usage: region list";
+
+                        var result = "ID         Region" + Environment.NewLine;
+                        if (regions == null || !regions.Any())
+                            return $"{ConsoleControl.ErrorColour}No regions found!";
+
+                        // Get current region
+                        var currentRegion = configRoot.GetValue<string>("SkyRegion");
+                        if (string.IsNullOrWhiteSpace(currentRegion))
+                        {
+                            configRoot.SetValue<string>("SkyRegion", DEFAULT_REGION);
+                            currentRegion = DEFAULT_REGION;
+                        }
+
+                        foreach (var region in regions)
+                        {
+                            if (currentRegion == region.RegionId)
+                                result += ConsoleControl.SetFG(ConsoleColor.Green);
+
+                            result += $"{region.RegionId,-10} {region.RegionName}{Environment.NewLine}";
+
+                            if (currentRegion == region.RegionId)
+                                result += ConsoleControl.SetFG(ConsoleColor.White);
+
+                        }
+
+                        var currentRegionObj = regions.FirstOrDefault(row => row.RegionId.Equals(currentRegion));
+                        if (currentRegionObj != null)
+                        {
+                            result += Environment.NewLine;
+                            result += $"Current region is {currentRegion} ({currentRegionObj.RegionName}){Environment.NewLine}";
+                        }
+
+                        return result;
                     }
+                case "show":
+                    {
+                        if (args.Length != 1)
+                            return $"Invalid arguments. Usage: region show";
 
-                    var regionData = regions?.FirstOrDefault(row => row.RegionId.Equals(region));
-                    if (regionData == null)
-                        throw new DataException($"Region {region} not found in region data!");
+                        var region = configRoot.GetValue<string>("SkyRegion");
+                        if (string.IsNullOrWhiteSpace(region))
+                        {
+                            configRoot.SetValue<string>("SkyRegion", DEFAULT_REGION);
+                            region = DEFAULT_REGION;
+                        }
 
-                    return $"Current region is {regionData.RegionId}: {regionData.RegionName}";
-                }
+                        var regionData = regions?.FirstOrDefault(row => row.RegionId.Equals(region));
+                        if (regionData == null)
+                            throw new DataException($"Region {region} not found in region data!");
+
+                        return $"Current region is {regionData.RegionId}: {regionData.RegionName}";
+                    }
                 case "set":
-                {
-                    if (args.Length != 2)
-                        return $"Invalid arguments. Usage: region set <regionid>";
+                    {
+                        if (args.Length != 2)
+                            return $"Invalid arguments. Usage: region set <regionid>";
 
-                    var region = configRoot.GetValue<string>("SkyRegion");
-                    var regionData = regions?.FirstOrDefault(row => row.RegionId.Equals(args[1], StringComparison.InvariantCultureIgnoreCase));
-                    if (regionData == null)
-                        return $"{ConsoleControl.ErrorColour}Invalid region {args[1]}";
+                        var region = configRoot.GetValue<string>("SkyRegion");
+                        var regionData = regions?.FirstOrDefault(row => row.RegionId.Equals(args[1], StringComparison.InvariantCultureIgnoreCase));
+                        if (regionData == null)
+                            return $"{ConsoleControl.ErrorColour}Invalid region {args[1]}";
 
-                    if (regionData.RegionId.Equals(region))
-                        return "No change to region. Nothing to do";
+                        if (regionData.RegionId.Equals(region))
+                            return "No change to region. Nothing to do";
 
-                    configRoot.SetValue("SkyRegion", regionData.RegionId);
-                    GetApiChannels();
-                    return
-                        $"{ConsoleControl.SetFG(ConsoleColor.Green)}Region set to {regionData.RegionId} ({regionData.RegionName})";
-                }
+                        configRoot.SetValue("SkyRegion", regionData.RegionId);
+                        GetApiChannels();
+                        return
+                            $"{ConsoleControl.SetFG(ConsoleColor.Green)}Region set to {regionData.RegionId} ({regionData.RegionName})";
+                    }
             }
             return "";
         }
@@ -104,17 +141,17 @@ namespace EpgMgr.Plugins
                 case "list":
                     List<SkyChannel> channels;
                     var searchString = string.Empty;
-                    if (args.Length >= 2 && args[1].Equals("all", StringComparison.InvariantCultureIgnoreCase))
+                    if (args.Length >= 2 && args[1].Equals("active", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        channels = configRoot.GetList<SkyChannel>("ChannelsAvailable") ?? new List<SkyChannel>();
-                        if (channels == null || !channels.Any())
-                            channels = GetApiChannels().ToList();
+                        channels = configRoot.GetList<SkyChannel>("ChannelsSubbed") ?? new List<SkyChannel>();
                         if (args.Length >= 3)
                             searchString = args[2];
                     }
                     else
                     {
-                        channels = configRoot.GetList<SkyChannel>("ChannelsSubbed") ?? new List<SkyChannel>();
+                        channels = configRoot.GetList<SkyChannel>("ChannelsAvailable") ?? new List<SkyChannel>();
+                        if (channels == null || !channels.Any())
+                            channels = GetApiChannels().ToList();
                         if (args.Length >= 2)
                             searchString = args[1];
                     }
@@ -123,9 +160,17 @@ namespace EpgMgr.Plugins
                         channels = channels.Where(row =>
                                 row.ChannelName.Contains(searchString, StringComparison.InvariantCultureIgnoreCase))
                             .ToList();
+
+                    var channelsSubbed = configRoot.GetList<SkyChannel>("ChannelsSubbed") ?? new List<SkyChannel>();
                     var result = "Number Name                      Type" + Environment.NewLine;
                     foreach (var channel in channels)
+                    {
+                        if (channelsSubbed.Select(row => row.ChannelNo).Contains(channel.ChannelNo))
+                            result += ConsoleControl.SetFG(ConsoleColor.Green);
                         result += $"{channel.ChannelNo,-6} {channel.ChannelName,-25} {channel.Sf}{Environment.NewLine}";
+                        if (channelsSubbed.Select(row => row.ChannelNo).Contains(channel.ChannelNo))
+                            result += ConsoleControl.SetFG(ConsoleColor.White);
+                    }
                     return result;
                 case "add":
                 {
