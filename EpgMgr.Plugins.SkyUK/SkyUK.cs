@@ -15,8 +15,7 @@ namespace EpgMgr.Plugins
             "https://d2n0069hmnqmmx.cloudfront.net/epgdata/1.0/newchanlogos/320/320/skychb";
 
         // This might change often. Must watch.
-        internal const string BLOBDATAURI =
-            "https://www.sky.com/watch/assets/pages-app-tv-guide-index-js.81a2d554690a593fed3d.js";
+        internal const string BLOBDATAURI = @"https://www.sky.com/watch/assets/pages-app-tv-guide-index-js.b81853f72df02fc543f7.js";
 
         internal const string DEFAULT_REGION = "4101-1";    // London HD
         public override Guid Id => Guid.Parse("17EC20A0-D302-4A42-BD10-23E5F08EDBAA");
@@ -273,7 +272,7 @@ namespace EpgMgr.Plugins
             // Read regions
             var regionRegex =
                 new Regex(
-                    "M.exports\\=(\\[{text\\:\\\".+?\\\"\\,bouquet\\:\\d+?\\,subBouquet\\:\\d+?,value\\:\\\".*?\\\"\\}\\])");
+                    "b.exports\\=(\\[{text\\:\\\".+?\\\"\\,bouquet\\:\\d+?\\,subBouquet\\:\\d+?,value\\:\\\".*?\\\"\\}\\])");
             var regionDataString = regionRegex.Match(blobData);
             if (regionDataString.Groups.Count > 1)
             {
