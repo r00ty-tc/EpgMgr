@@ -34,11 +34,6 @@
 		<PluginDll Include="$(TargetPath)" />
 	</ItemGroup>
     <!--<Exec Command="mkdir $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins&#xD;&#xA;copy $(TargetPath) $(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins\$(TargetFileName)" />-->
-	<Copy SourceFiles="@(PluginDll)" DestinationFolder="$(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net6.0\Plugins\" />
+	<Copy SourceFiles="@(PluginDll)" DestinationFolder="$(TargetDir)\..\..\..\..\EpgMgr.Console\bin\$(ConfigurationName)\net8.0\Plugins\" />
   </Target>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy /y $(TargetPath) $(SolutionDir)\EpgMgr.Console\bin\$(Configuration)\net8.0\Plugins\" />
-  </Target>
-
 </Project>
