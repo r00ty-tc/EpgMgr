@@ -43,7 +43,7 @@ var core = new Core(UpdateFeedback);
 Console.OutputEncoding = Encoding.UTF8;
 var context = core.CommandMgr.RootFolder;
 ConsoleControl.WriteLine($"EpgMgr Console {Assembly.GetExecutingAssembly().GetName().Version}");
-var useConsole = true;
+var useConsole = false;
 if (args.Length != 0)
 {
     useConsole = ProcessArgs(args.ToList());
@@ -63,7 +63,7 @@ System.Environment.Exit(0);
 
 bool ProcessArgs(List<string> args)
 {
-    var useConsole = true;
+    var useConsole = false;
     var willRun = false;
     // Currently just looking for -run or -file
     while (args.Count > 0)
@@ -75,32 +75,35 @@ bool ProcessArgs(List<string> args)
         switch (arg.ToLower())
         {
             case "-file":
-            {
-                var file = TakeArg(args);
-                if (file == null)
                 {
-                    ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Invalid parameter. -file requires filename parameter");
-                    core.Dispose();
-                    Environment.Exit(1);
-                }
+                    var file = TakeArg(args);
+                    if (file == null)
+                    {
+                        ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Invalid parameter. -file requires filename parameter");
+                        core.Dispose();
+                        Environment.Exit(1);
+                    }
 
-                var info = new FileInfo(file);
-                if (info.Directory is { Exists: true })
-                {
-                    ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Folder for {file} doesn't exist");
-                    core.Dispose();
-                    Environment.Exit(1);
-                }
+                    var info = new FileInfo(file);
+                    if (info.Directory is { Exists: true })
+                    {
+                        ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Folder for {file} doesn't exist");
+                        core.Dispose();
+                        Environment.Exit(1);
+                    }
 
-                core.Config.XmlTvConfig.Filename = file;
+                    core.Config.XmlTvConfig.Filename = file;
+                    break;
+                }
+            case "-console":
+                useConsole = true;
                 break;
-            }
             case "-run":
-            {
-                useConsole = false;
-                willRun = true;
-                break;
-            }
+                {
+                    useConsole = false;
+                    willRun = true;
+                    break;
+                }
             case "-help":
             case "-?":
                 ConsoleControl.WriteLine("Usage: Console [-file <filename>] [-run]. No arguments will start the console -file will set the xmltv filename to use and -run will bypass console and create an xmltv file");
@@ -113,6 +116,13 @@ bool ProcessArgs(List<string> args)
                 Environment.Exit(1);
                 break;
         }
+    }
+
+    if (useConsole && willRun)
+    {
+        ConsoleControl.WriteLine($"{ConsoleControl.ErrorColour}Cannot set console and run modes at the same time");
+        core.Dispose();
+        Environment.Exit(1);
     }
 
     if (willRun)
