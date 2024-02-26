@@ -78,26 +78,32 @@ namespace EpgMgr.Plugins
                     }
                 case "add":
                     {
-                        if (args.Length != 2)
-                            return $"{ConsoleControl.ErrorColour}Invalid arguments, try channel add <channelId>";
+                        if (args.Length < 2)
+                            return "Invalid arguments. Try channel add <channel/range>";
+                        var rangeArgs = args.TakeLast(args.Length - 1).ToArray();
+                        var allChannels = configRoot.GetList<Channel>("ChannelsAvailable");
+                        var existingChannels = configRoot.GetList<Channel>("ChannelsSubbed") ?? new List<Channel>();
+                        if (allChannels == null || !allChannels.Any())
+                            allChannels = getApiChannels().ToList();
+                        var channelsToAdd = ProcessRange(rangeArgs, allChannels).Distinct();
+                        var addedChans = 0;
+                        var existingChans = 0;
+                        foreach (var channel in channelsToAdd.Distinct())
+                        {
+                            if (existingChannels.Select(row => row.Name).Contains(channel.Name))
+                                existingChans++;
+                            else
+                            {
+                                existingChannels.Add(channel);
+                                addedChans++;
+                            }
+                        }
 
-                        // Get channel (and lists for subbed/available channels)
-                        var channelsSubbed = configRoot.GetList<Channel>("ChannelsSubbed") ?? new List<Channel>();
-                        var channelsAvailable = configRoot.GetList<Channel>("ChannelsAvailable");
-                        var channel = channelsAvailable?.FirstOrDefault(row => row.Name != null &&
-                            row.Name.Equals(args[1], StringComparison.InvariantCultureIgnoreCase));
-
-                        // If not found, error
-                        if (channel == null)
-                            return $"{ConsoleControl.ErrorColour}Channel {args[1]} not found";
-
-                        // Add the channel and return result to user
-                        channelsSubbed.Add(channel);
-                        configRoot.SetList("ChannelsSubbed", channelsSubbed);
-
-                        return $"Added {channel.Name} to active channels";
+                        if (addedChans > 0)
+                            configRoot.SetList("ChannelsSubbed", existingChannels);
+                        return $"Added {addedChans} channel(s), ignored {existingChans} already present";
                     }
-                    case "remove":
+                case "remove":
                     {
                         if (args.Length != 2)
                             return $"{ConsoleControl.ErrorColour}Invalid arguments, try channel remove <channelId>";
@@ -118,5 +124,20 @@ namespace EpgMgr.Plugins
                     return $"{ConsoleControl.ErrorColour}Invalid arguments, try help channel";
             }
         }
+
+        protected IEnumerable<Channel> ProcessRange(string[] rangeArgs, IEnumerable<Channel> channels)
+        {
+            var newChannels = new List<Channel>();
+            foreach (var arg in rangeArgs)
+            {
+                var channelList = channels.ToArray(); // channels as SkyChannel[] ?? channels.ToArray();
+                var thisChannel = channelList.FirstOrDefault(row =>
+                    row.Name != null && row.Name.Equals(arg, StringComparison.InvariantCultureIgnoreCase));
+                if (thisChannel != null)
+                    newChannels.Add(thisChannel);
+            }
+            return newChannels;
+        }
+
     }
 }
