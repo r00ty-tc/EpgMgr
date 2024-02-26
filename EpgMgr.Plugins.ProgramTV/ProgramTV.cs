@@ -72,10 +72,13 @@ namespace EpgMgr.Plugins
             var subChannels = configRoot.GetList<Channel>("ChannelsSubbed") ?? new List<Channel>();
             var xmltvChannelNames = GetXmlTvChannels().Select(row => row.Id);
             int programCount = 0;
+            m_core.FeedbackMgr.UpdateStatus("ProgramTV: Updating programmes", 0, subChannels.Count);
+            var currentChannel = 0;
+            var totalPrograms = 0;
             foreach (var channel in subChannels)
             {
                 var programmes = getApiProgrammes(channel.Id, DateTime.Today, m_core.Config.XmlTvConfig.MaxDaysAhead).ToArray();
-
+                totalPrograms += programmes.Length;
                 // See if we can fix the null date(s)
                 var nullProgrammes = programmes.Where(row => row.EndTime == null);
                 foreach (var nullProgramme in nullProgrammes)
@@ -104,9 +107,11 @@ namespace EpgMgr.Plugins
                     if (!string.IsNullOrWhiteSpace(programme.Description))
                         xmlProgramme.AddDescription(programme.Description, "ro");
                     programCount++;
+                    if (programCount % 10 == 0)
+                        m_core.FeedbackMgr.UpdateStatus(null, programCount, totalPrograms);
                 }
             }
-            m_core.FeedbackMgr.UpdateStatus($"ProgramTV: Loaded {programCount} programmes from API");
+            m_core.FeedbackMgr.UpdateStatus(null, programCount, totalPrograms);
 
             return errors;
         }

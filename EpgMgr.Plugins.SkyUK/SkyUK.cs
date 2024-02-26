@@ -52,7 +52,6 @@ namespace EpgMgr.Plugins
                 var todayProgrammes = GetAllProgrammes(ref lookupCount, date);
                 programmeList.AddRange(todayProgrammes);
             }
-            m_core.FeedbackMgr.UpdateStatus("SkyUK: Done loading from API");
 
             var totalPrograms = programmeList.Sum(epg => epg.Schedules.Sum(schedule => schedule.Programmes.Length));
             var currentProgram = 0;
